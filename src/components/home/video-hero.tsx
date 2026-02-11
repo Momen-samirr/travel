@@ -18,7 +18,7 @@ export function VideoHero({
   children,
   videoSrc = "/videos/herovideo.mp4",
   videoWebm = undefined,
-  posterSrc = "/images/hero-poster.jpg",
+  posterSrc = undefined, // Optional poster image - gradient background will show if not provided
   overlayOpacity = 0.6,
   className = "",
 }: VideoHeroProps) {
@@ -121,15 +121,21 @@ export function VideoHero({
 
       {/* Poster Image - Mobile, fallback, or when video fails */}
       {(isMobile || !isVideoLoaded || videoError) && (
-        <div className="absolute inset-0 w-full h-full">
-          <Image
-            src={posterSrc}
-            alt="Travel destination"
-            fill
-            priority={!isMobile}
-            className="object-cover"
-            sizes="100vw"
-          />
+        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary/30">
+          {posterSrc && (
+            <Image
+              src={posterSrc}
+              alt="Travel destination"
+              fill
+              priority={!isMobile}
+              className="object-cover"
+              sizes="100vw"
+              onError={(e) => {
+                // Silently handle image load errors - gradient background will show
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          )}
         </div>
       )}
 
