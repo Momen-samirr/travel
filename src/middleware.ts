@@ -23,7 +23,15 @@ export default clerkMiddleware(async (auth, request) => {
   let response: NextResponse;
 
   if (!isPublicRoute(request)) {
-    await auth.protect();
+    const { userId } = await auth();
+    
+    if (!userId) {
+      // Redirect to sign-in with return URL
+      const signInUrl = new URL("/sign-in", request.url);
+      signInUrl.searchParams.set("redirect", request.url);
+      
+      return NextResponse.redirect(signInUrl);
+    }
   }
 
   // Note: User creation is handled in getCurrentUser() which is called

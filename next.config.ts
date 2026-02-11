@@ -14,6 +14,24 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   generateEtags: true,
+  // Ensure video files are served correctly
+  async headers() {
+    return [
+      {
+        source: "/videos/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+          {
+            key: "Content-Type",
+            value: "video/mp4",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

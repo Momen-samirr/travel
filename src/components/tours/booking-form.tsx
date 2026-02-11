@@ -36,7 +36,7 @@ export function BookingForm({
   bookingType,
 }: BookingFormProps) {
   const router = useRouter();
-  const { user } = useUser();
+  const { user, isSignedIn, isLoaded } = useUser();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
@@ -62,6 +62,30 @@ export function BookingForm({
   });
 
   const onSubmit = async (data: BookingInput) => {
+    // Check authentication before submitting
+    if (!isLoaded) {
+      toast({
+        title: "Please wait",
+        description: "Checking authentication...",
+        variant: "default",
+      });
+      return;
+    }
+
+    if (!isSignedIn || !user) {
+      const currentPath = window.location.pathname;
+      const redirectUrl = `${currentPath}${window.location.search}`;
+      
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to complete your booking.",
+        variant: "default",
+      });
+      
+      router.push(`/sign-in?redirect=${encodeURIComponent(redirectUrl)}`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await fetch("/api/bookings", {

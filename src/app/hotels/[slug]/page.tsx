@@ -9,6 +9,8 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { HotelReviewForm } from "@/components/hotels/review-form";
 import { getCurrentUser } from "@/lib/clerk";
+import { SignInButton } from "@clerk/nextjs";
+import { Lock, LogIn } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -163,13 +165,37 @@ export default async function HotelDetailPage({
             </Card>
           )}
 
-          {user && (
+          {user ? (
             <Card>
               <CardHeader>
                 <CardTitle>Write a Review</CardTitle>
               </CardHeader>
               <CardContent>
                 <HotelReviewForm hotelId={hotel.id} />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-2 border-dashed">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Lock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Sign In to Leave a Review</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Share your experience and help other travelers make informed decisions.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <SignInButton mode="modal" fallbackRedirectUrl={`/hotels/${hotel.slug}`}>
+                  <Button className="w-full">
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Sign In to Review
+                  </Button>
+                </SignInButton>
               </CardContent>
             </Card>
           )}

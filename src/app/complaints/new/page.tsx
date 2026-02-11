@@ -23,9 +23,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useUser, SignInButton } from "@clerk/nextjs";
+import { Lock, LogIn } from "lucide-react";
+import { AuthGuard } from "@/components/auth/auth-guard";
 
 const complaintSchema = z.object({
   bookingId: z.string().optional(),
@@ -39,7 +42,18 @@ type ComplaintInput = z.infer<typeof complaintSchema>;
 export default function NewComplaintPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { isSignedIn, isLoaded } = useUser();
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to submit a complaint.",
+        variant: "default",
+      });
+    }
+  }, [isLoaded, isSignedIn, toast]);
 
   const form = useForm<ComplaintInput>({
     resolver: zodResolver(complaintSchema),
@@ -51,6 +65,27 @@ export default function NewComplaintPage() {
   });
 
   const onSubmit = async (data: ComplaintInput) => {
+    // Check authentication before submitting
+    if (!isLoaded) {
+      toast({
+        title: "Please wait",
+        description: "Checking authentication...",
+        variant: "default",
+      });
+      return;
+    }
+
+    if (!isSignedIn) {
+      const currentPath = window.location.pathname;
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to submit a complaint.",
+        variant: "default",
+      });
+      router.push(`/sign-in?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await fetch("/api/complaints", {
@@ -83,11 +118,49 @@ export default function NewComplaintPage() {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="container mx-auto px-4 py-12 max-w-2xl">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-12 max-w-2xl">
       <h1 className="text-3xl font-bold mb-8">Submit a Complaint</h1>
 
-      <Card>
+      <AuthGuard
+        message="Please sign in to submit a complaint and track its status."
+        fallback={
+          <Card className="border-2 border-dashed">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Lock className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <CardTitle>Sign In Required</CardTitle>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Please sign in to submit a complaint and track its status.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <SignInButton mode="modal" fallbackRedirectUrl={window.location.pathname}>
+                <Button className="w-full">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Sign In to Submit Complaint
+                </Button>
+              </SignInButton>
+            </CardContent>
+          </Card>
+        }
+      >
+        <Card>
         <CardHeader>
           <CardTitle>Complaint Details</CardTitle>
         </CardHeader>
@@ -171,6 +244,7 @@ export default function NewComplaintPage() {
           </Form>
         </CardContent>
       </Card>
+      </AuthGuard>
     </div>
   );
 }

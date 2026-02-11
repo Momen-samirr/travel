@@ -25,8 +25,11 @@ export function VideoHero({
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const maxRetries = 2;
 
   useEffect(() => {
     // Check if mobile
@@ -52,24 +55,40 @@ export function VideoHero({
       { threshold: 0.1 }
     );
 
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
+    const containerElement = containerRef.current;
+    if (containerElement) {
+      observer.observe(containerElement);
     }
 
     return () => {
       window.removeEventListener("resize", checkMobile);
-      if (containerRef.current) {
-        observer.unobserve(containerRef.current);
+      if (containerElement) {
+        observer.unobserve(containerElement);
       }
     };
   }, [isMobile]);
 
   const handleVideoLoad = () => {
     setIsVideoLoaded(true);
+    setVideoError(false);
   };
 
   const handleVideoError = () => {
+    console.error("Video failed to load:", videoSrc);
     setIsVideoLoaded(false);
+    
+    // Retry loading if we haven't exceeded max retries
+    if (retryCount < maxRetries && videoRef.current) {
+      setRetryCount((prev) => prev + 1);
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.load();
+        }
+      }, 1000 * (retryCount + 1)); // Exponential backoff
+    } else {
+      setVideoError(true);
+      console.warn("Video failed to load after retries, falling back to poster image");
+    }
   };
 
   return (
@@ -78,7 +97,7 @@ export function VideoHero({
       className={`relative min-h-[90vh] flex items-center justify-center overflow-hidden ${className}`}
     >
       {/* Background Video - Desktop only */}
-      {!isMobile && shouldLoadVideo && (
+      {!isMobile && shouldLoadVideo && !videoError && (
         <div className="absolute inset-0 w-full h-full">
           <video
             ref={videoRef}
@@ -100,8 +119,8 @@ export function VideoHero({
         </div>
       )}
 
-      {/* Poster Image - Mobile or fallback */}
-      {(isMobile || !isVideoLoaded) && (
+      {/* Poster Image - Mobile, fallback, or when video fails */}
+      {(isMobile || !isVideoLoaded || videoError) && (
         <div className="absolute inset-0 w-full h-full">
           <Image
             src={posterSrc}
