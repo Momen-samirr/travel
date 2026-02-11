@@ -1,0 +1,331 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum BookingType {
+  TOUR
+  FLIGHT
+  HOTEL
+  VISA
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  BANK
+  PAYMOB
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model User {
+  id          String        @id @default(cuid())
+  clerkId     String        @unique
+  email       String        @unique
+  name        String?
+  phone       String?
+  role        UserRole      @default(USER)
+  lastLoginAt DateTime?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  bookings     Booking[]
+  reviews      Review[]
+  complaints   Complaint[]
+  blogs        Blog[]
+  activityLogs ActivityLog[]
+
+  @@index([clerkId])
+  @@index([email])
+  @@index([isActive])
+}
+
+model Tour {
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  description     String   @db.Text
+  shortDescription String @db.Text
+  price           Decimal  @db.Decimal(10, 2)
+  discountPrice   Decimal? @db.Decimal(10, 2)
+  currency        String   @default("EGP")
+  duration        Int      // days
+  maxGroupSize    Int?
+  minGroupSize    Int      @default(1)
+  images          Json     // Array of image URLs
+  itinerary       Json?    // Array of itinerary items
+  destination     String
+  category        String
+  difficulty      String?
+  isActive        Boolean  @default(true)
+  isFeatured      Boolean  @default(false)
+  startDate       DateTime?
+  endDate         DateTime?
+  availableSpots   Int?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bookings Booking[]
+  reviews  Review[]
+
+  @@index([slug])
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([category])
+}
+
+model Flight {
+  id              String    @id @default(cuid())
+  flightNumber    String
+  airline         String
+  origin          String
+  destination     String
+  departureDate   DateTime
+  arrivalDate     DateTime
+  price           Decimal   @db.Decimal(10, 2)
+  currency        String    @default("EGP")
+  availableSeats  Int
+  amadeusOfferId  String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  bookings Booking[]
+
+  @@index([origin, destination])
+  @@index([departureDate])
+  @@index([isActive])
+}
+
+model Hotel {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  description   String   @db.Text
+  address       String
+  city          String
+  country       String
+  latitude      Float?
+  longitude     Float?
+  pricePerNight Decimal  @db.Decimal(10, 2)
+  currency      String   @default("EGP")
+  rating        Float?
+  amenities     Json     // Array of amenities
+  images        Json     // Array of image URLs
+  checkInTime   String?
+  checkOutTime  String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  bookings Booking[]
+  reviews  Review[]
+
+  @@index([slug])
+  @@index([city, country])
+  @@index([isActive])
+}
+
+model Visa {
+  id                String   @id @default(cuid())
+  country           String
+  type              String
+  description       String   @db.Text
+  price             Decimal  @db.Decimal(10, 2)
+  currency          String   @default("EGP")
+  processingTime    String   // e.g., "5-7 business days"
+  requiredDocuments Json     // Array of required documents
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@index([country])
+  @@index([isActive])
+}
+
+model Booking {
+  id                  String        @id @default(cuid())
+  userId              String
+  bookingType         BookingType
+  tourId              String?
+  flightId            String?
+  hotelId             String?
+  visaId              String?
+  status              BookingStatus @default(PENDING)
+  totalAmount         Decimal       @db.Decimal(10, 2)
+  currency            String        @default("EGP")
+  paymentStatus       PaymentStatus @default(PENDING)
+  paymentMethod       PaymentMethod?
+  paymentTransactionId String?
+  bookingDate         DateTime      @default(now())
+  travelDate          DateTime?
+  guestDetails        Json          // Guest information
+  flightOfferData     Json?         // Complete Amadeus flight offer data
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tour   Tour?  @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  flight Flight? @relation(fields: [flightId], references: [id], onDelete: SetNull)
+  hotel  Hotel? @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  visa   Visa?  @relation(fields: [visaId], references: [id], onDelete: SetNull)
+
+  complaints Complaint[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([bookingType])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String
+  tourId     String?
+  hotelId    String?
+  rating     Int      // 1-5
+  title      String?
+  comment    String?  @db.Text
+  images     Json?    // Array of review image URLs
+  isVerified Boolean  @default(false) // Verified purchase
+  isApproved Boolean  @default(false) // Admin moderation
+  helpfulCount Int    @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tour Tour? @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  hotel Hotel? @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@index([tourId])
+  @@index([hotelId])
+  @@index([isApproved])
+  @@index([rating])
+}
+
+model Complaint {
+  id            String           @id @default(cuid())
+  userId        String
+  bookingId     String?
+  subject       String
+  description   String           @db.Text
+  category      String
+  status        ComplaintStatus  @default(OPEN)
+  priority      ComplaintPriority @default(MEDIUM)
+  adminResponse String?          @db.Text
+  resolvedAt    DateTime?
+  attachments   Json?            // Array of attachment URLs
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+}
+
+model Blog {
+  id            String    @id @default(cuid())
+  title         String
+  slug          String    @unique
+  content       String    @db.Text
+  excerpt       String?   @db.Text
+  featuredImage String?
+  authorId      String
+  category      String?
+  tags          Json?     // Array of tags
+  isPublished   Boolean   @default(false)
+  publishedAt   DateTime?
+  seoTitle      String?
+  seoDescription String?  @db.Text
+  readingTime   Int?      // in minutes
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([category])
+  @@index([authorId])
+}
+
+model EmailNotification {
+  id           String   @id @default(cuid())
+  userId       String?
+  type         String   // e.g., "BOOKING_CONFIRMATION", "PAYMENT_RECEIPT"
+  subject      String
+  status       String   // "SENT", "FAILED", "PENDING"
+  sentAt       DateTime?
+  errorMessage String?  @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([type])
+}
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String   // e.g., "USER_CREATED", "BOOKING_CREATED", "ADMIN_ACTION"
+  entityType String?  // e.g., "User", "Booking", "Tour"
+  entityId   String?
+  details    Json?    // Additional context
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+}
+
