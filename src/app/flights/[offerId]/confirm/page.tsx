@@ -83,9 +83,9 @@ export default function BookingConfirmPage() {
         }
 
         setFlightOffer(bookingData.flightOffer);
-        setReturnOffer(bookingData.returnOffer);
+        setReturnOffer(bookingData.returnOffer || null);
         setPassengers(bookingData.passengers);
-        setContact(bookingData.contact);
+        setContact(bookingData.contact || null);
         setSearchParams(bookingData.searchParams);
         setLoading(false);
       } catch (error) {

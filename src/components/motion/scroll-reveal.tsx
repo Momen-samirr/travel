@@ -45,11 +45,6 @@ export function ScrollReveal({
       opacity: 1,
       x: 0,
       y: 0,
-      transition: {
-        duration: 0.6,
-        delay,
-        ease: [0.4, 0, 0.2, 1],
-      },
     },
   };
 
@@ -59,6 +54,11 @@ export function ScrollReveal({
       initial="hidden"
       animate={isInView ? "visible" : "hidden"}
       variants={getAnimationVariants(variants)}
+      transition={{
+        duration: 0.6,
+        delay,
+        ease: [0.4, 0, 0.2, 1],
+      }}
       className={className}
       {...props}
     >

@@ -21,7 +21,7 @@ export default async function ToursPage({
   if (params.category) where.category = params.category;
   if (params.featured === "true") where.isFeatured = true;
 
-  let tours = [];
+  let tours: any[] = [];
   let total = 0;
 
   try {

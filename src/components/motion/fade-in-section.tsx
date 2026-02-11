@@ -28,11 +28,6 @@ export function FadeInSection({
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration,
-        delay,
-        ease: [0.4, 0, 0.2, 1],
-      },
     },
   };
 
@@ -42,6 +37,11 @@ export function FadeInSection({
       initial="hidden"
       animate={isInView ? "visible" : "hidden"}
       variants={getAnimationVariants(variants)}
+      transition={{
+        duration,
+        delay,
+        ease: [0.4, 0, 0.2, 1],
+      }}
       className={className}
     >
       {children}

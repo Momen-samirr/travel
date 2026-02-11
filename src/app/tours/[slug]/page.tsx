@@ -326,7 +326,7 @@ export default async function TourDetailPage({
                   </div>
                   <div className="text-sm text-muted-foreground">per person</div>
                 </div>
-                <Button asChild className="w-full" size="lg" className="rounded-full h-12 text-base">
+                <Button asChild className="w-full rounded-full h-12 text-base" size="lg">
                   <Link href={`/tours/${tour.slug}/book`}>Book Now</Link>
                 </Button>
                 <p className="text-xs text-center text-muted-foreground">

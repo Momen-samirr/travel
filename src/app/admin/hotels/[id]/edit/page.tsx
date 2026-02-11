@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/clerk";
 import { redirect, notFound } from "next/navigation";
 import { HotelForm } from "@/components/admin/hotel-form";
+import { HotelInput } from "@/lib/validations/hotel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,23 +28,23 @@ export default async function EditHotelPage({
     notFound();
   }
 
-  const initialData = {
+  const initialData: HotelInput & { id?: string } = {
     id: hotel.id,
     name: hotel.name,
     slug: hotel.slug,
-    description: hotel.description,
-    address: hotel.address,
+    description: hotel.description || "",
+    address: hotel.address || "",
     city: hotel.city,
     country: hotel.country,
-    latitude: hotel.latitude,
-    longitude: hotel.longitude,
+    latitude: hotel.latitude ?? null,
+    longitude: hotel.longitude ?? null,
     pricePerNight: Number(hotel.pricePerNight),
     currency: hotel.currency,
-    rating: hotel.rating,
+    rating: hotel.rating ?? null,
     amenities: hotel.amenities as string[],
     images: hotel.images as string[],
-    checkInTime: hotel.checkInTime,
-    checkOutTime: hotel.checkOutTime,
+    checkInTime: hotel.checkInTime ?? null,
+    checkOutTime: hotel.checkOutTime ?? null,
     isActive: hotel.isActive,
   };
 

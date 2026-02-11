@@ -41,7 +41,7 @@ export function BookingForm({
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<BookingInput>({
-    resolver: zodResolver(bookingSchema),
+    resolver: zodResolver(bookingSchema) as any,
     defaultValues: {
       bookingType,
       tourId: tourId || null,

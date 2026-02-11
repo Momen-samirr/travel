@@ -43,8 +43,8 @@ export function AirportAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const blurTimeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize query from value prop only if value is empty or we don't have a selected airport
   useEffect(() => {

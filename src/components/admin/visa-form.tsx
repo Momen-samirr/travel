@@ -35,7 +35,7 @@ export function VisaForm({ initialData }: VisaFormProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<VisaInput>({
-    resolver: zodResolver(visaSchema),
+    resolver: zodResolver(visaSchema) as any,
     defaultValues: initialData || {
       country: "",
       type: "",

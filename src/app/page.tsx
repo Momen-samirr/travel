@@ -11,7 +11,7 @@ import { WhyChooseUs } from "@/components/home/why-choose-us";
 
 export default async function HomePage() {
   // Fetch featured tours for homepage
-  let featuredTours = [];
+  let featuredTours: any[] = [];
   try {
     const toursData = await prisma.tour.findMany({
       where: {

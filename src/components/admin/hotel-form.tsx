@@ -35,8 +35,25 @@ export function HotelForm({ initialData }: HotelFormProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const form = useForm<HotelInput>({
-    resolver: zodResolver(hotelSchema),
-    defaultValues: initialData || {
+    resolver: zodResolver(hotelSchema) as any,
+    defaultValues: initialData ? {
+      name: initialData.name,
+      slug: initialData.slug,
+      description: initialData.description,
+      address: initialData.address,
+      city: initialData.city,
+      country: initialData.country,
+      latitude: initialData.latitude ?? null,
+      longitude: initialData.longitude ?? null,
+      pricePerNight: initialData.pricePerNight,
+      currency: initialData.currency ?? "EGP",
+      rating: initialData.rating ?? null,
+      amenities: initialData.amenities,
+      images: initialData.images,
+      checkInTime: initialData.checkInTime ?? null,
+      checkOutTime: initialData.checkOutTime ?? null,
+      isActive: initialData.isActive ?? true,
+    } : {
       name: "",
       slug: "",
       description: "",

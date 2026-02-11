@@ -46,7 +46,7 @@ export default async function AdminBookingsPage({
     where.userId = params.userId;
   }
 
-  const [bookings, total] = await Promise.all([
+  const [bookingsData, total] = await Promise.all([
     prisma.booking.findMany({
       where,
       include: {
@@ -93,6 +93,12 @@ export default async function AdminBookingsPage({
     }),
     prisma.booking.count({ where }),
   ]);
+
+  // Convert Decimal fields to numbers for client components
+  const bookings = bookingsData.map((booking) => ({
+    ...booking,
+    totalAmount: booking.totalAmount ? Number(booking.totalAmount) : 0,
+  }));
 
   return (
     <div>
