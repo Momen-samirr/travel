@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  // Get all dynamic routes
   const [tours, hotels, blogs] = await Promise.all([
     prisma.tour.findMany({
       where: { isActive: true },

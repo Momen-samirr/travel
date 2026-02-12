@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -88,11 +85,11 @@ model Tour {
   price           Decimal  @db.Decimal(10, 2)
   discountPrice   Decimal? @db.Decimal(10, 2)
   currency        String   @default("EGP")
-  duration        Int      // days
+  duration        Int      
   maxGroupSize    Int?
   minGroupSize    Int      @default(1)
-  images          Json     // Array of image URLs
-  itinerary       Json?    // Array of itinerary items
+  images          Json     
+  itinerary       Json?    
   destination     String
   category        String
   difficulty      String?
@@ -149,8 +146,8 @@ model Hotel {
   pricePerNight Decimal  @db.Decimal(10, 2)
   currency      String   @default("EGP")
   rating        Float?
-  amenities     Json     // Array of amenities
-  images        Json     // Array of image URLs
+  amenities     Json     
+  images        Json     
   checkInTime   String?
   checkOutTime  String?
   isActive      Boolean  @default(true)
@@ -172,8 +169,8 @@ model Visa {
   description       String   @db.Text
   price             Decimal  @db.Decimal(10, 2)
   currency          String   @default("EGP")
-  processingTime    String   // e.g., "5-7 business days"
-  requiredDocuments Json     // Array of required documents
+  processingTime    String  
+  requiredDocuments Json    
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -200,8 +197,8 @@ model Booking {
   paymentTransactionId String?
   bookingDate         DateTime      @default(now())
   travelDate          DateTime?
-  guestDetails        Json          // Guest information
-  flightOfferData     Json?         // Complete Amadeus flight offer data
+  guestDetails        Json         
+  flightOfferData     Json?         
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
@@ -224,12 +221,12 @@ model Review {
   userId     String
   tourId     String?
   hotelId    String?
-  rating     Int      // 1-5
+  rating     Int      
   title      String?
   comment    String?  @db.Text
-  images     Json?    // Array of review image URLs
-  isVerified Boolean  @default(false) // Verified purchase
-  isApproved Boolean  @default(false) // Admin moderation
+  images     Json?    
+  isVerified Boolean  @default(false) 
+  isApproved Boolean  @default(false) 
   helpfulCount Int    @default(0)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -255,7 +252,7 @@ model Complaint {
   priority      ComplaintPriority @default(MEDIUM)
   adminResponse String?          @db.Text
   resolvedAt    DateTime?
-  attachments   Json?            // Array of attachment URLs
+  attachments   Json?            
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
 
@@ -277,12 +274,12 @@ model Blog {
   featuredImage String?
   authorId      String
   category      String?
-  tags          Json?     // Array of tags
+  tags          Json?     
   isPublished   Boolean   @default(false)
   publishedAt   DateTime?
   seoTitle      String?
   seoDescription String?  @db.Text
-  readingTime   Int?      // in minutes
+  readingTime   Int?      
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -297,9 +294,9 @@ model Blog {
 model EmailNotification {
   id           String   @id @default(cuid())
   userId       String?
-  type         String   // e.g., "BOOKING_CONFIRMATION", "PAYMENT_RECEIPT"
+  type         String   
   subject      String
-  status       String   // "SENT", "FAILED", "PENDING"
+  status       String   
   sentAt       DateTime?
   errorMessage String?  @db.Text
   createdAt    DateTime @default(now())
@@ -312,10 +309,10 @@ model EmailNotification {
 model ActivityLog {
   id         String   @id @default(cuid())
   userId     String?
-  action     String   // e.g., "USER_CREATED", "BOOKING_CREATED", "ADMIN_ACTION"
-  entityType String?  // e.g., "User", "Booking", "Tour"
+  action     String   
+  entityType String?  
   entityId   String?
-  details    Json?    // Additional context
+  details    Json?    
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())

@@ -34,12 +34,6 @@ export default clerkMiddleware(async (auth, request) => {
     }
   }
 
-  // Note: User creation is handled in getCurrentUser() which is called
-  // in page components and API routes (not in middleware due to Edge Runtime)
-  
-  // For admin routes, we'll check the role in the admin layout instead
-  // since we can't use Prisma in middleware (Edge Runtime limitation)
-
   response = NextResponse.next();
   return addSecurityHeaders(response);
 });

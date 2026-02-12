@@ -70,7 +70,6 @@ export async function PUT(
     const body = await request.json();
     const data = blogSchema.parse(body);
 
-    // Calculate reading time
     const wordCount = data.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200);
 
