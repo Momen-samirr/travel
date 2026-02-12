@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: any = {};
 
     if (status) {
@@ -155,7 +154,6 @@ export async function PUT(request: NextRequest) {
       data: updateData,
     });
 
-    // Log activity
     const changes: string[] = [];
     if (status && status !== currentBooking.status) {
       changes.push(`status: ${currentBooking.status} → ${status}`);

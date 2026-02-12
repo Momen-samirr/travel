@@ -15,7 +15,6 @@ export async function GET(request: NextRequest) {
 
     const results = await getAirportCityCodes(query);
 
-    // Transform the response to a cleaner format
     const locations = results.data?.map((location: any) => ({
       iataCode: location.iataCode,
       name: location.name,

@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit;
 
-    // Build where clause
     const where: any = {};
 
     if (search) {
@@ -101,8 +100,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Note: This creates a user without Clerk ID
-    // In production, you might want to create via Clerk API first
     const user = await prisma.user.create({
       data: {
         email,

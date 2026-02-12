@@ -97,7 +97,6 @@ export async function PUT(
 
     const { name, phone, role, isActive } = body;
 
-    // Get current user to track changes
     const currentUser = await prisma.user.findUnique({
       where: { id },
       select: { role: true, isActive: true },
@@ -121,7 +120,6 @@ export async function PUT(
       data: updateData,
     });
 
-    // Log activity
     const changes: string[] = [];
     if (role && role !== currentUser.role) {
       changes.push(`role: ${currentUser.role} → ${role}`);
@@ -180,7 +178,6 @@ export async function DELETE(
     const admin = await requireAdmin();
     const { id } = await params;
 
-    // Don't allow deleting yourself
     if (admin.id === id) {
       return NextResponse.json(
         { error: "Cannot delete your own account" },

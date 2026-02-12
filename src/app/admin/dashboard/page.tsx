@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-// Ensure this runs in Node.js runtime (not Edge)
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -35,7 +34,6 @@ export default async function AdminDashboard() {
     prisma.booking.count({ where: { paymentStatus: "PENDING" } }),
     prisma.booking.count({ where: { paymentStatus: "PAID" } }),
     prisma.booking.count({ where: { paymentStatus: "FAILED" } }),
-    // Today's revenue
     prisma.booking.aggregate({
       where: {
         paymentStatus: "PAID",
@@ -47,7 +45,6 @@ export default async function AdminDashboard() {
         totalAmount: true,
       },
     }),
-    // This week's revenue
     prisma.booking.aggregate({
       where: {
         paymentStatus: "PAID",
@@ -59,7 +56,6 @@ export default async function AdminDashboard() {
         totalAmount: true,
       },
     }),
-    // This month's revenue
     prisma.booking.aggregate({
       where: {
         paymentStatus: "PAID",
@@ -71,7 +67,6 @@ export default async function AdminDashboard() {
         totalAmount: true,
       },
     }),
-    // Recent payments (last 5)
     prisma.booking.findMany({
       where: {
         paymentStatus: "PAID",

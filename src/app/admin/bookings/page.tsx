@@ -94,7 +94,6 @@ export default async function AdminBookingsPage({
     prisma.booking.count({ where }),
   ]);
 
-  // Convert Decimal fields to numbers for client components
   const bookings = bookingsData.map((booking) => ({
     ...booking,
     totalAmount: booking.totalAmount ? Number(booking.totalAmount) : 0,

@@ -63,7 +63,6 @@ export async function PUT(
       data: validated,
     });
 
-    // Log activity
     await logActivity({
       userId: user.id,
       action: "BOOKING_UPDATED",

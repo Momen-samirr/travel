@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ bookings: [] });
     }
 
-    // Fetch only status and payment status for efficiency
     const bookings = await prisma.booking.findMany({
       where: {
         id: {
@@ -37,7 +36,6 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Return as map for easy lookup
     const statusMap = bookings.reduce((acc, booking) => {
       acc[booking.id] = {
         status: booking.status,

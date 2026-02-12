@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = blogSchema.parse(body);
 
-    // Calculate reading time (average 200 words per minute)
     const wordCount = data.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200);
 

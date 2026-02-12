@@ -39,13 +39,11 @@ export async function POST() {
       );
     }
 
-    // Check if user exists
     let user = await prisma.user.findUnique({
       where: { clerkId: userId },
     });
 
     if (!user) {
-      // Create user
       user = await prisma.user.upsert({
         where: { clerkId: userId },
         update: {},
@@ -64,7 +62,6 @@ export async function POST() {
         email,
       });
 
-      // Log activity
       await logActivity({
         userId: user.id,
         action: ActivityActions.USER_CREATED,
@@ -83,7 +80,6 @@ export async function POST() {
         },
       });
     } else {
-      // Update last login
       await prisma.user.update({
         where: { id: user.id },
         data: { lastLoginAt: new Date() },

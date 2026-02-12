@@ -6,18 +6,15 @@ import { clerkClient } from "@clerk/nextjs/server";
 
 export async function POST(request: NextRequest) {
   try {
-    // Verify admin access
     await requireAdmin();
 
     const body = await request.json();
     const { clerkId, email, force } = body;
 
-    // If specific user provided, sync that user
     if (clerkId || email) {
       return await syncSingleUser(clerkId, email, force);
     }
 
-    // Otherwise, sync all users from Clerk
     return await syncAllUsers();
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
@@ -68,7 +65,6 @@ async function syncSingleUser(clerkId?: string, email?: string, force = false) {
       );
     }
 
-    // Check if user exists in database
     const existingUser = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
     });
@@ -85,7 +81,6 @@ async function syncSingleUser(clerkId?: string, email?: string, force = false) {
       });
     }
 
-    // Create or update user
     const user = await prisma.user.upsert({
       where: { clerkId: clerkUser.id },
       update: {
@@ -138,7 +133,6 @@ async function syncAllUsers() {
     let offset = 0;
     const limit = 100;
 
-    // Fetch all users from Clerk (paginated)
     while (hasMore) {
       const response = await clerk.users.getUserList({
         limit,
@@ -162,7 +156,6 @@ async function syncAllUsers() {
       errors: [] as string[],
     };
 
-    // Sync each user
     for (const clerkUser of allUsers) {
       try {
         const email = clerkUser.emailAddresses[0]?.emailAddress || "";

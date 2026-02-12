@@ -38,7 +38,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate IATA codes are 3 characters
     if (origin.length !== 3 || destination.length !== 3) {
       console.error("[API /amadeus/search] Invalid IATA codes:", { origin, destination });
       return NextResponse.json(
@@ -47,7 +46,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate date format
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(departureDate)) {
       return NextResponse.json(
@@ -63,7 +61,6 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Validate return date is after departure date
     if (returnDate && new Date(returnDate) <= new Date(departureDate)) {
       return NextResponse.json(
         { error: "Return date must be after departure date" },

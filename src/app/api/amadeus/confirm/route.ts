@@ -12,7 +12,6 @@ export async function POST(request: NextRequest) {
       hasFlightOffers: !!flightOffers,
     });
 
-    // Accept either offerId (string) or flightOffer/flightOffers (object/array)
     let offerData: string | any;
     
     if (flightOffers && Array.isArray(flightOffers)) {
@@ -30,7 +29,6 @@ export async function POST(request: NextRequest) {
 
     const result = await confirmFlightPrice(offerData);
 
-    // Compare prices if original offer was provided
     let priceChanged = false;
     let priceDifference = 0;
     let originalPrice = 0;
