@@ -153,13 +153,17 @@ export async function POST(request: NextRequest) {
       });
       if (!hotel) {
         return NextResponse.json(
-          { error: "Hotel not found" },
+          { error: "Hotel not found", message: "Hotel not found" },
           { status: 404 }
         );
       }
-      // Calculate based on number of nights (assuming 1 night for now)
-      totalAmount = Number(hotel.pricePerNight) * data.numberOfGuests;
-      currency = hotel.currency;
+      // Hotel pricing is no longer stored in the Hotel model
+      // For standalone hotel bookings, pricing should be provided in the request
+      // or handled through a different booking flow
+      return NextResponse.json(
+        { error: "Hotel pricing not configured. Please use charter packages for hotel bookings.", message: "Hotel pricing not configured. Please use charter packages for hotel bookings." },
+        { status: 400 }
+      );
     } else if (data.bookingType === "VISA" && data.visaId) {
       const visa = await prisma.visa.findUnique({
         where: { id: data.visaId },

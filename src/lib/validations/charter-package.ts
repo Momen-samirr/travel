@@ -14,7 +14,7 @@ export const charterPackageSchema = z.object({
   basePrice: z.number().positive().optional().nullable(),
   priceRangeMin: z.number().positive().optional().nullable(),
   priceRangeMax: z.number().positive().optional().nullable(),
-  currency: z.string().default("EGP"),
+  currency: z.string().min(1, "Currency is required"),
   discount: z.number().min(0).max(100).optional().nullable(),
   isActive: z.boolean().default(true),
   includedServices: z.array(z.string()).min(0),

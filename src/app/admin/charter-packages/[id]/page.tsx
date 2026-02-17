@@ -185,7 +185,7 @@ export default async function AdminCharterPackageDetailPage({
                     </div>
                     {option.priceModifier && (
                       <Badge variant="outline">
-                        {option.priceModifier > 0 ? "+" : ""}
+                        {Number(option.priceModifier) > 0 ? "+" : ""}
                         {formatCurrency(Number(option.priceModifier), option.currency)}
                       </Badge>
                     )}
@@ -236,28 +236,6 @@ export default async function AdminCharterPackageDetailPage({
                         </Badge>
                       )}
                     </div>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                    {option.singleRoomPrice && (
-                      <div>
-                        Single: {formatCurrency(Number(option.singleRoomPrice), option.currency)}
-                      </div>
-                    )}
-                    {option.doubleRoomPrice && (
-                      <div>
-                        Double: {formatCurrency(Number(option.doubleRoomPrice), option.currency)}
-                      </div>
-                    )}
-                    {option.childPrice && (
-                      <div>
-                        Child: {formatCurrency(Number(option.childPrice), option.currency)}
-                      </div>
-                    )}
-                    {option.infantPrice && (
-                      <div>
-                        Infant: {formatCurrency(Number(option.infantPrice), option.currency)}
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

@@ -202,7 +202,7 @@ export default async function CharterPackageDetailPage({
                         </div>
                         {option.priceModifier && (
                           <Badge variant="outline">
-                            {option.priceModifier > 0 ? "+" : ""}
+                            {Number(option.priceModifier) > 0 ? "+" : ""}
                             {formatCurrency(Number(option.priceModifier), option.currency)}
                           </Badge>
                         )}
@@ -450,7 +450,7 @@ export default async function CharterPackageDetailPage({
                 <div className="text-sm text-muted-foreground">per person</div>
               </div>
               {pkg.discount && (
-                <Badge variant="destructive">{pkg.discount}% OFF</Badge>
+                <Badge variant="destructive">{Number(pkg.discount)}% OFF</Badge>
               )}
               <div className="space-y-2 text-sm">
                 <div className="flex items-center gap-2">
@@ -490,7 +490,6 @@ export default async function CharterPackageDetailPage({
                       city: opt.hotel.city,
                       country: opt.hotel.country,
                     },
-                    currency: opt.currency,
                     starRating: opt.starRating,
                     bookingRating: opt.bookingRating,
                   })),

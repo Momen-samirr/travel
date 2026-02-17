@@ -112,7 +112,7 @@ export function CharterPackageForm({
   }, []);
 
   const form = useForm<CharterPackageInput>({
-    resolver: zodResolver(charterPackageSchema),
+    resolver: zodResolver(charterPackageSchema) as any,
     defaultValues: initialData || {
       name: "",
       slug: "",
