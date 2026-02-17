@@ -88,7 +88,7 @@ export function DurationFilter({
             max={nightsRange.max}
             onChange={(e) => {
               const value = e.target.value ? parseInt(e.target.value) : null;
-              onNightsChange(value, maxNights);
+              onNightsChange(value, maxNights ?? null);
               if (value !== null) {
                 setNightsSlider([value, maxNights || nightsRange.max]);
               }
@@ -103,7 +103,7 @@ export function DurationFilter({
             max={nightsRange.max}
             onChange={(e) => {
               const value = e.target.value ? parseInt(e.target.value) : null;
-              onNightsChange(minNights, value);
+              onNightsChange(minNights ?? null, value);
               if (value !== null) {
                 setNightsSlider([minNights || nightsRange.min, value]);
               }
@@ -154,7 +154,7 @@ export function DurationFilter({
             max={daysRange.max}
             onChange={(e) => {
               const value = e.target.value ? parseInt(e.target.value) : null;
-              onDaysChange(value, maxDays);
+              onDaysChange(value, maxDays ?? null);
               if (value !== null) {
                 setDaysSlider([value, maxDays || daysRange.max]);
               }
@@ -169,7 +169,7 @@ export function DurationFilter({
             max={daysRange.max}
             onChange={(e) => {
               const value = e.target.value ? parseInt(e.target.value) : null;
-              onDaysChange(minDays, value);
+              onDaysChange(minDays ?? null, value);
               if (value !== null) {
                 setDaysSlider([minDays || daysRange.min, value]);
               }

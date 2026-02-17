@@ -51,6 +51,7 @@ export function PackagesPageContent({
       page: parseInt(searchParams.get("page") || "1"),
       limit: limit,
       sortBy: (searchParams.get("sortBy") as any) || "newest",
+      hotelRating: [],
     };
 
     if (searchParams.get("destinationCountry")) {

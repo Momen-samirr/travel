@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { Package } from "lucide-react";
 import { CharterPackagesPageContent } from "@/components/charter-packages/CharterPackagesPageContent";
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
+import { PackageType } from "@/services/packages/types";
 
 export const metadata = {
   title: "Charter Travel Packages",
@@ -217,9 +218,9 @@ export default async function CharterPackagesPage({
       )
     ).sort();
 
-    const packageTypes = Array.from(
-      new Set(filterOptionsData.map((pkg) => pkg.type))
-    );
+        const packageTypes = Array.from(
+          new Set(filterOptionsData.map((pkg) => pkg.type))
+        ) as PackageType[];
 
     filterOptions = {
       countries,

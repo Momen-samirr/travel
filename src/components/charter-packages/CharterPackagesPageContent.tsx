@@ -16,6 +16,7 @@ import {
 import { Package, Loader2, Filter, X } from "lucide-react";
 import { StaggerList } from "@/components/motion/stagger-list";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { PackageType } from "@/services/packages/types";
 
 interface PackageData {
   id: string;
@@ -44,7 +45,7 @@ interface FilterOptions {
   priceRange: { min: number; max: number; currency: string };
   durationRange: { minNights: number; maxNights: number; minDays: number; maxDays: number };
   hotelRatings: number[];
-  packageTypes: string[];
+  packageTypes: PackageType[];
 }
 
 export function CharterPackagesPageContent({
@@ -67,6 +68,7 @@ export function CharterPackagesPageContent({
       page: parseInt(searchParams.get("page") || "1"),
       limit: 12,
       sortBy: (searchParams.get("sortBy") as any) || "newest",
+      hotelRating: [],
     };
 
     if (searchParams.get("destinationCountry")) {

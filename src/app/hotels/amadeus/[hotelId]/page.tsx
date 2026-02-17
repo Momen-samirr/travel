@@ -213,6 +213,9 @@ export default async function AmadeusHotelDetailPage({
                             latitude: hotel.latitude,
                             longitude: hotel.longitude,
                             address: hotel.address,
+                            city: hotel.city || "",
+                            country: hotel.country || "",
+                            placeId: hotel.placeId || null,
                           },
                         ]}
                       />

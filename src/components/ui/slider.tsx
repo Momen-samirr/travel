@@ -4,7 +4,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // Simple slider component using native HTML5 range input
-interface SliderProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> {
+interface SliderProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value"> {
   value?: number[];
   onValueChange?: (value: number[]) => void;
   min?: number;

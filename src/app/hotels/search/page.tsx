@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { HotelSearchForm } from "@/components/hotels/hotel-search-form";
 import { HotelFiltersSidebar } from "@/components/hotels/hotel-filters-sidebar";
@@ -12,7 +12,7 @@ import { Map, List as ListIcon, Filter } from "lucide-react";
 import { Hotel } from "@/services/hotels/types";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-export default function HotelSearchPage() {
+function HotelSearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [hotels, setHotels] = useState<Hotel[]>([]);
@@ -247,6 +247,14 @@ export default function HotelSearchPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function HotelSearchPage() {
+  return (
+    <Suspense fallback={<HotelSearchSkeleton />}>
+      <HotelSearchContent />
+    </Suspense>
   );
 }
 

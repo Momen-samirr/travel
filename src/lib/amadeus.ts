@@ -329,7 +329,7 @@ export async function searchHotelsByCity(params: {
               hotelDetails.media = [];
             }
             // Merge photos with existing media, avoiding duplicates
-            photos.forEach((photoUrl) => {
+            photos.forEach((photoUrl: string) => {
               const exists = hotelDetails.media.some((m: any) => m.uri === photoUrl);
               if (!exists) {
                 hotelDetails.media.push({ uri: photoUrl });

@@ -140,30 +140,36 @@ export function PackageFiltersSidebar({
         />
       </FilterSection>
 
-      <FilterSection title="Duration" icon={<Clock className="h-4 w-4" />}>
-        <DurationFilter
-          minNights={filters.minNights || null}
-          maxNights={filters.maxNights || null}
-          minDays={filters.minDays || null}
-          maxDays={filters.maxDays || null}
-          nightsRange={options.durationRange}
-          daysRange={options.durationRange}
-          onNightsChange={(min, max) =>
-            onFiltersChange({
-              ...filters,
-              minNights: min || undefined,
-              maxNights: max || undefined,
-            })
-          }
-          onDaysChange={(min, max) =>
-            onFiltersChange({
-              ...filters,
-              minDays: min || undefined,
-              maxDays: max || undefined,
-            })
-          }
-        />
-      </FilterSection>
+          <FilterSection title="Duration" icon={<Clock className="h-4 w-4" />}>
+            <DurationFilter
+              minNights={filters.minNights || null}
+              maxNights={filters.maxNights || null}
+              minDays={filters.minDays || null}
+              maxDays={filters.maxDays || null}
+              nightsRange={{
+                min: options.durationRange.minNights,
+                max: options.durationRange.maxNights,
+              }}
+              daysRange={{
+                min: options.durationRange.minDays,
+                max: options.durationRange.maxDays,
+              }}
+              onNightsChange={(min, max) =>
+                onFiltersChange({
+                  ...filters,
+                  minNights: min || undefined,
+                  maxNights: max || undefined,
+                })
+              }
+              onDaysChange={(min, max) =>
+                onFiltersChange({
+                  ...filters,
+                  minDays: min || undefined,
+                  maxDays: max || undefined,
+                })
+              }
+            />
+          </FilterSection>
 
       <FilterSection title="Price Range" icon={<DollarSign className="h-4 w-4" />}>
         <PriceRangeFilter

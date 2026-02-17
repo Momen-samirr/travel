@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { CharterPackageForm } from "@/components/admin/charter-package-form";
 import { notFound } from "next/navigation";
+import { PackageType } from "@/services/packages/types";
 
 export default async function EditCharterPackagePage({
   params,
@@ -35,6 +36,7 @@ export default async function EditCharterPackagePage({
       <CharterPackageForm
         initialData={{
           ...pkg,
+          type: pkg.type as PackageType,
           basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
           priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
           priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,

@@ -32,12 +32,12 @@ export function PackageTypeFilter({
   return (
     <div className="space-y-4">
       <RadioGroup
-        value={selectedType || ""}
-        onValueChange={(value) => onTypeChange(value || null)}
+        value={selectedType || "all"}
+        onValueChange={(value) => onTypeChange(value === "all" || value === "" ? null : (value as PackageType))}
       >
         <div className="space-y-3">
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="" id="type-all" />
+            <RadioGroupItem value="all" id="type-all" />
             <Label htmlFor="type-all" className="cursor-pointer font-normal">
               All Types
             </Label>

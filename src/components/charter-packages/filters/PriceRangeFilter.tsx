@@ -72,7 +72,7 @@ export function PriceRangeFilter({
               max={priceRange.max}
               onChange={(e) => {
                 const value = e.target.value ? parseInt(e.target.value) : null;
-                onPriceChange(value, maxPrice);
+                onPriceChange(value, maxPrice ?? null);
                 if (value !== null) {
                   setPriceSlider([value, maxPrice || priceRange.max]);
                 }
@@ -89,7 +89,7 @@ export function PriceRangeFilter({
               max={priceRange.max}
               onChange={(e) => {
                 const value = e.target.value ? parseInt(e.target.value) : null;
-                onPriceChange(minPrice, value);
+                onPriceChange(minPrice ?? null, value);
                 if (value !== null) {
                   setPriceSlider([minPrice || priceRange.min, value]);
                 }
