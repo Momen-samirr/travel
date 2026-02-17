@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 interface TourFormProps {
   initialData?: TourInput & { id?: string };
 }
-//TourFormProps is the type of the initial data for the tour form
+//TourFormProps is here the type of the initial data for the tour form
 export function TourForm({ initialData }: TourFormProps) {
   const router = useRouter();
   const { toast } = useToast();
