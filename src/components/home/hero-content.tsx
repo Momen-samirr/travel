@@ -55,9 +55,9 @@ export function HeroContent() {
           </Link>
         </Button>
         <Button asChild size="lg" variant="outline" className="rounded-full px-8 h-12 text-base bg-white/10 backdrop-blur border-white/20 text-white hover:bg-white/20">
-          <Link href="/tours">
+          <Link href="/charter-packages">
             <MapPin className="mr-2 h-5 w-5" />
-            Explore Tours
+            Packages
           </Link>
         </Button>
       </motion.div>

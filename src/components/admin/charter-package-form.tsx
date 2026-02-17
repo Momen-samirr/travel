@@ -35,6 +35,7 @@ import {
 import { Upload, X, Plus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { slugify } from "@/lib/utils";
+import { PackageType } from "@/services/packages/types";
 
 interface Hotel {
   id: string;
@@ -113,27 +114,28 @@ export function CharterPackageForm({
 
   const form = useForm<CharterPackageInput>({
     resolver: zodResolver(charterPackageSchema) as any,
-    defaultValues: initialData || {
-      name: "",
-      slug: "",
-      description: "",
-      shortDescription: "",
-      destinationCountry: "",
-      destinationCity: "",
-      nights: 7,
-      days: 8,
-      mainImage: null,
-      gallery: [],
-      basePrice: null,
-      priceRangeMin: null,
-      priceRangeMax: null,
-      currency: "EGP",
-      discount: null,
-      isActive: true,
-      includedServices: [],
-      excludedServices: [],
-      excursionProgram: [],
-      requiredDocuments: [],
+    defaultValues: {
+      type: (initialData?.type as PackageType) || PackageType.HOTEL_CHARTER,
+      name: initialData?.name || "",
+      slug: initialData?.slug || "",
+      description: initialData?.description || "",
+      shortDescription: initialData?.shortDescription || "",
+      destinationCountry: initialData?.destinationCountry || "",
+      destinationCity: initialData?.destinationCity || "",
+      nights: initialData?.nights || 7,
+      days: initialData?.days || 8,
+      mainImage: initialData?.mainImage || null,
+      gallery: (initialData?.gallery as string[]) || [],
+      basePrice: initialData?.basePrice || null,
+      priceRangeMin: initialData?.priceRangeMin || null,
+      priceRangeMax: initialData?.priceRangeMax || null,
+      currency: initialData?.currency || "EGP",
+      discount: initialData?.discount || null,
+      isActive: initialData?.isActive ?? true,
+      includedServices: initialData?.includedServices || [],
+      excludedServices: initialData?.excludedServices || [],
+      excursionProgram: initialData?.excursionProgram || [],
+      requiredDocuments: initialData?.requiredDocuments || [],
     },
   });
 
@@ -510,6 +512,47 @@ export function CharterPackageForm({
 
           <TabsContent value="basic" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Package Type *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value || PackageType.HOTEL_CHARTER}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select package type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={PackageType.HOTEL_CHARTER}>
+                          Hotel Charter (with flights)
+                        </SelectItem>
+                        <SelectItem value={PackageType.INBOUND}>
+                          Inbound (no international flights)
+                        </SelectItem>
+                        <SelectItem value={PackageType.OUTBOUND}>
+                          Outbound
+                        </SelectItem>
+                        <SelectItem value={PackageType.DOMESTIC}>
+                          Domestic
+                        </SelectItem>
+                        <SelectItem value={PackageType.CUSTOM}>
+                          Custom
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Select the type of package. Charter includes flights, Inbound is for local tourism.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="name"

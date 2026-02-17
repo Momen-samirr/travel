@@ -494,7 +494,10 @@ export default async function CharterPackageDetailPage({
                     bookingRating: opt.bookingRating,
                   })),
                   departureOptions: pkg.departureOptions,
-                  addons: pkg.addons,
+                  addons: pkg.addons.map((addon) => ({
+                    ...addon,
+                    price: Number(addon.price),
+                  })),
                 }}
               />
             </CardContent>

@@ -31,9 +31,9 @@ export function HomepageSearchWidget() {
               <Plane className="h-4 w-4" />
               <span className="hidden sm:inline">Flights</span>
             </TabsTrigger>
-            <TabsTrigger value="tours" className="flex items-center gap-2">
+            <TabsTrigger value="packages" className="flex items-center gap-2">
               <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">Tours</span>
+              <span className="hidden sm:inline">Packages</span>
             </TabsTrigger>
             <TabsTrigger value="hotels" className="flex items-center gap-2">
               <Hotel className="h-4 w-4" />
@@ -55,15 +55,15 @@ export function HomepageSearchWidget() {
               </div>
             )}
 
-            {activeTab === "tours" && (
+            {activeTab === "packages" && (
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  onClick={() => handleQuickSearch("tours")}
+                  onClick={() => handleQuickSearch("packages")}
                   size="lg"
                   className="flex-1 h-14 text-base rounded-xl"
                 >
                   <Search className="mr-2 h-5 w-5" />
-                  Browse Tours
+                  Browse Packages
                 </Button>
               </div>
             )}

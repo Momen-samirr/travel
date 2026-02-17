@@ -42,7 +42,7 @@ export default async function HotelBookingPage({
   }
 
   const images = hotel.images as string[];
-  const mainImage = images[0] || "/placeholder-hotel.jpg";
+  const hasImage = images && images.length > 0 && images[0];
   const amenities = hotel.amenities as string[];
 
   return (
@@ -57,13 +57,23 @@ export default async function HotelBookingPage({
 
           <div className="lg:col-span-1">
             <Card>
-              <div className="relative h-48 w-full">
-                <Image
-                  src={mainImage}
-                  alt={hotel.name}
-                  fill
-                  className="object-cover rounded-t-lg"
-                />
+              <div className="relative h-48 w-full bg-muted">
+                {hasImage ? (
+                  <Image
+                    src={images[0]}
+                    alt={hotel.name}
+                    fill
+                    className="object-cover rounded-t-lg"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                    }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-t-lg">
+                    <span className="text-muted-foreground">No Image</span>
+                  </div>
+                )}
               </div>
               <CardHeader>
                 <CardTitle>{hotel.name}</CardTitle>

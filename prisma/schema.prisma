@@ -61,17 +61,25 @@ enum RoomType {
   QUAD
 }
 
+enum PackageType {
+  HOTEL_CHARTER
+  INBOUND
+  OUTBOUND
+  DOMESTIC
+  CUSTOM
+}
+
 model User {
-  id          String        @id @default(cuid())
-  clerkId     String        @unique
-  email       String        @unique
+  id          String    @id @default(cuid())
+  clerkId     String    @unique
+  email       String    @unique
   name        String?
   phone       String?
-  role        UserRole      @default(USER)
+  role        UserRole  @default(USER)
   lastLoginAt DateTime?
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   bookings              Booking[]
   reviews               Review[]
@@ -86,29 +94,29 @@ model User {
 }
 
 model Tour {
-  id              String   @id @default(cuid())
-  title           String
-  slug            String   @unique
-  description     String   @db.Text
-  shortDescription String @db.Text
-  price           Decimal  @db.Decimal(10, 2)
-  discountPrice   Decimal? @db.Decimal(10, 2)
-  currency        String   @default("EGP")
-  duration        Int      
-  maxGroupSize    Int?
-  minGroupSize    Int      @default(1)
-  images          Json     
-  itinerary       Json?    
-  destination     String
-  category        String
-  difficulty      String?
-  isActive        Boolean  @default(true)
-  isFeatured      Boolean  @default(false)
-  startDate       DateTime?
-  endDate         DateTime?
+  id               String    @id @default(cuid())
+  title            String
+  slug             String    @unique
+  description      String    @db.Text
+  shortDescription String    @db.Text
+  price            Decimal   @db.Decimal(10, 2)
+  discountPrice    Decimal?  @db.Decimal(10, 2)
+  currency         String    @default("EGP")
+  duration         Int
+  maxGroupSize     Int?
+  minGroupSize     Int       @default(1)
+  images           Json
+  itinerary        Json?
+  destination      String
+  category         String
+  difficulty       String?
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+  startDate        DateTime?
+  endDate          DateTime?
   availableSpots   Int?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   bookings Booking[]
   reviews  Review[]
@@ -120,20 +128,20 @@ model Tour {
 }
 
 model Flight {
-  id              String    @id @default(cuid())
-  flightNumber    String
-  airline         String
-  origin          String
-  destination     String
-  departureDate   DateTime
-  arrivalDate     DateTime
-  price           Decimal   @db.Decimal(10, 2)
-  currency        String    @default("EGP")
-  availableSeats  Int
-  amadeusOfferId  String?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String   @id @default(cuid())
+  flightNumber   String
+  airline        String
+  origin         String
+  destination    String
+  departureDate  DateTime
+  arrivalDate    DateTime
+  price          Decimal  @db.Decimal(10, 2)
+  currency       String   @default("EGP")
+  availableSeats Int
+  amadeusOfferId String?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   bookings Booking[]
 
@@ -143,28 +151,28 @@ model Flight {
 }
 
 model Hotel {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  description   String   @db.Text
-  address       String
-  city          String
-  country       String
-  latitude      Float?
-  longitude     Float?
-  placeId       String?
-  rating        Float?
-  amenities     Json     
-  images        Json     
-  checkInTime   String?
-  checkOutTime  String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String   @db.Text
+  address      String
+  city         String
+  country      String
+  latitude     Float?
+  longitude    Float?
+  placeId      String?
+  rating       Float?
+  amenities    Json
+  images       Json
+  checkInTime  String?
+  checkOutTime String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   bookings              Booking[]
-  reviews                Review[]
-  charterPackageOptions  CharterPackageHotelOption[]
+  reviews               Review[]
+  charterPackageOptions CharterPackageHotelOption[]
 
   @@index([slug])
   @@index([city, country])
@@ -178,8 +186,8 @@ model Visa {
   description       String   @db.Text
   price             Decimal  @db.Decimal(10, 2)
   currency          String   @default("EGP")
-  processingTime    String  
-  requiredDocuments Json    
+  processingTime    String
+  requiredDocuments Json
   isActive          Boolean  @default(true)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -191,24 +199,24 @@ model Visa {
 }
 
 model Booking {
-  id                  String        @id @default(cuid())
-  userId              String
-  bookingType         BookingType
-  tourId              String?
-  flightId            String?
-  hotelId             String?
-  visaId              String?
-  charterPackageId    String?
-  status              BookingStatus @default(PENDING)
-  totalAmount         Decimal       @db.Decimal(10, 2)
-  currency            String        @default("EGP")
-  paymentStatus       PaymentStatus @default(PENDING)
-  paymentMethod       PaymentMethod?
-  paymentTransactionId String?
-  bookingDate         DateTime      @default(now())
-  travelDate          DateTime?
-  guestDetails        Json         
-  flightOfferData     Json?         
+  id                       String         @id @default(cuid())
+  userId                   String
+  bookingType              BookingType
+  tourId                   String?
+  flightId                 String?
+  hotelId                  String?
+  visaId                   String?
+  charterPackageId         String?
+  status                   BookingStatus  @default(PENDING)
+  totalAmount              Decimal        @db.Decimal(10, 2)
+  currency                 String         @default("EGP")
+  paymentStatus            PaymentStatus  @default(PENDING)
+  paymentMethod            PaymentMethod?
+  paymentTransactionId     String?
+  bookingDate              DateTime       @default(now())
+  travelDate               DateTime?
+  guestDetails             Json
+  flightOfferData          Json?
   charterHotelOptionId     String?
   charterDepartureOptionId String?
   roomType                 String?
@@ -216,17 +224,17 @@ model Booking {
   numberOfChildren         Int?
   numberOfInfants          Int?
   selectedAddonIds         Json?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tour           Tour?                @relation(fields: [tourId], references: [id], onDelete: SetNull)
-  flight         Flight?              @relation(fields: [flightId], references: [id], onDelete: SetNull)
-  hotel          Hotel?               @relation(fields: [hotelId], references: [id], onDelete: SetNull)
-  visa           Visa?                @relation(fields: [visaId], references: [id], onDelete: SetNull)
-  charterPackage CharterTravelPackage? @relation(fields: [charterPackageId], references: [id], onDelete: SetNull)
+  user                   User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tour                   Tour?                      @relation(fields: [tourId], references: [id], onDelete: SetNull)
+  flight                 Flight?                    @relation(fields: [flightId], references: [id], onDelete: SetNull)
+  hotel                  Hotel?                     @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  visa                   Visa?                      @relation(fields: [visaId], references: [id], onDelete: SetNull)
+  charterPackage         CharterTravelPackage?      @relation(fields: [charterPackageId], references: [id], onDelete: SetNull)
   charterHotelOption     CharterPackageHotelOption? @relation(fields: [charterHotelOptionId], references: [id], onDelete: SetNull)
-  charterDepartureOption CharterDepartureOption?   @relation(fields: [charterDepartureOptionId], references: [id], onDelete: SetNull)
+  charterDepartureOption CharterDepartureOption?    @relation(fields: [charterDepartureOptionId], references: [id], onDelete: SetNull)
 
   complaints Complaint[]
 
@@ -237,22 +245,22 @@ model Booking {
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  userId     String
-  tourId     String?
-  hotelId    String?
-  rating     Int      
-  title      String?
-  comment    String?  @db.Text
-  images     Json?    
-  isVerified Boolean  @default(false) 
-  isApproved Boolean  @default(false) 
-  helpfulCount Int    @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  tourId       String?
+  hotelId      String?
+  rating       Int
+  title        String?
+  comment      String?  @db.Text
+  images       Json?
+  isVerified   Boolean  @default(false)
+  isApproved   Boolean  @default(false)
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tour Tour? @relation(fields: [tourId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tour  Tour?  @relation(fields: [tourId], references: [id], onDelete: Cascade)
   hotel Hotel? @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 
   @@index([tourId])
@@ -262,19 +270,19 @@ model Review {
 }
 
 model Complaint {
-  id            String           @id @default(cuid())
+  id            String            @id @default(cuid())
   userId        String
   bookingId     String?
   subject       String
-  description   String           @db.Text
+  description   String            @db.Text
   category      String
-  status        ComplaintStatus  @default(OPEN)
+  status        ComplaintStatus   @default(OPEN)
   priority      ComplaintPriority @default(MEDIUM)
-  adminResponse String?          @db.Text
+  adminResponse String?           @db.Text
   resolvedAt    DateTime?
-  attachments   Json?            
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  attachments   Json?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
@@ -286,22 +294,22 @@ model Complaint {
 }
 
 model Blog {
-  id            String    @id @default(cuid())
-  title         String
-  slug          String    @unique
-  content       String    @db.Text
-  excerpt       String?   @db.Text
-  featuredImage String?
-  authorId      String
-  category      String?
-  tags          Json?     
-  isPublished   Boolean   @default(false)
-  publishedAt   DateTime?
-  seoTitle      String?
-  seoDescription String?  @db.Text
-  readingTime   Int?      
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  content        String    @db.Text
+  excerpt        String?   @db.Text
+  featuredImage  String?
+  authorId       String
+  category       String?
+  tags           Json?
+  isPublished    Boolean   @default(false)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?   @db.Text
+  readingTime    Int?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
@@ -312,14 +320,14 @@ model Blog {
 }
 
 model EmailNotification {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String?
-  type         String   
+  type         String
   subject      String
-  status       String   
+  status       String
   sentAt       DateTime?
-  errorMessage String?  @db.Text
-  createdAt    DateTime @default(now())
+  errorMessage String?   @db.Text
+  createdAt    DateTime  @default(now())
 
   @@index([userId])
   @@index([status])
@@ -329,10 +337,10 @@ model EmailNotification {
 model ActivityLog {
   id         String   @id @default(cuid())
   userId     String?
-  action     String   
-  entityType String?  
+  action     String
+  entityType String?
   entityId   String?
-  details    Json?    
+  details    Json?
   ipAddress  String?
   userAgent  String?
   createdAt  DateTime @default(now())
@@ -347,57 +355,65 @@ model ActivityLog {
 }
 
 model CharterTravelPackage {
-  id                String   @id @default(cuid())
-  name              String
-  slug              String   @unique
-  description       String   @db.Text
-  shortDescription  String   @db.Text
+  id                 String      @id @default(cuid())
+  type               PackageType @default(HOTEL_CHARTER)
+  name               String
+  slug               String      @unique
+  description        String      @db.Text
+  shortDescription   String      @db.Text
   destinationCountry String
-  destinationCity   String
-  nights            Int
-  days              Int
-  mainImage         String?
-  gallery           Json
-  basePrice         Decimal? @db.Decimal(10, 2)
-  priceRangeMin     Decimal? @db.Decimal(10, 2)
-  priceRangeMax     Decimal? @db.Decimal(10, 2)
-  currency          String   @default("EGP")
-  discount          Decimal? @db.Decimal(5, 2)
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  destinationCity    String
+  nights             Int
+  days               Int
+  mainImage          String?
+  gallery            Json
+  basePrice          Decimal?    @db.Decimal(10, 2)
+  priceRangeMin      Decimal?    @db.Decimal(10, 2)
+  priceRangeMax      Decimal?    @db.Decimal(10, 2)
+  currency           String      @default("EGP")
+  discount           Decimal?    @db.Decimal(5, 2)
+  typeConfig         Json? // Type-specific configuration (flexible JSON)
+  isActive           Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
-  departureOptions CharterDepartureOption[]
-  hotelOptions     CharterPackageHotelOption[]
-  addons           CharterPackageAddon[]
-  includedServices Json
-  excludedServices Json
-  excursionProgram Json
+  departureOptions  CharterDepartureOption[]
+  hotelOptions      CharterPackageHotelOption[]
+  addons            CharterPackageAddon[]
+  includedServices  Json
+  excludedServices  Json
+  excursionProgram  Json
   requiredDocuments Json
-  bookings         Booking[]
-  reviews          CharterPackageReview[]
+  bookings          Booking[]
+  reviews           CharterPackageReview[]
 
+  @@index([type])
   @@index([slug])
   @@index([isActive])
   @@index([destinationCountry, destinationCity])
+  @@index([type, isActive])
+  @@index([isActive, destinationCountry, destinationCity])
+  @@index([isActive, priceRangeMin, priceRangeMax])
+  @@index([isActive, nights, days])
+  @@index([isActive, type, destinationCountry])
 }
 
 model CharterDepartureOption {
-  id              String   @id @default(cuid())
-  packageId       String
+  id               String   @id @default(cuid())
+  packageId        String
   departureAirport String
-  arrivalAirport  String
-  departureDate   DateTime
-  returnDate      DateTime
-  flightInfo      String?  @db.Text
-  priceModifier   Decimal? @db.Decimal(10, 2)
-  currency        String   @default("EGP")
-  isActive        Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  arrivalAirport   String
+  departureDate    DateTime
+  returnDate       DateTime
+  flightInfo       String?  @db.Text
+  priceModifier    Decimal? @db.Decimal(10, 2)
+  currency         String   @default("EGP")
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  package CharterTravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  package       CharterTravelPackage    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
   hotelPricings DepartureHotelPricing[]
 
   @@index([packageId])
@@ -405,19 +421,19 @@ model CharterDepartureOption {
 }
 
 model CharterPackageHotelOption {
-  id                String   @id @default(cuid())
-  packageId         String
-  hotelId           String
-  starRating        Int?
-  bookingRating     Float?
+  id                 String   @id @default(cuid())
+  packageId          String
+  hotelId            String
+  starRating         Int?
+  bookingRating      Float?
   distanceFromCenter Float?
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  package CharterTravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  hotel   Hotel                @relation(fields: [hotelId], references: [id], onDelete: Cascade)
-  bookings Booking[]
+  package       CharterTravelPackage    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  hotel         Hotel                   @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  bookings      Booking[]
   hotelPricings DepartureHotelPricing[]
 
   @@index([packageId])
@@ -442,18 +458,18 @@ model CharterPackageAddon {
 }
 
 model CharterPackageReview {
-  id          String   @id @default(cuid())
-  userId      String
-  packageId   String
-  rating      Int
-  title       String?
-  comment     String?  @db.Text
-  images      Json?
-  isVerified  Boolean  @default(false)
-  isApproved  Boolean  @default(false)
-  helpfulCount Int     @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  packageId    String
+  rating       Int
+  title        String?
+  comment      String?  @db.Text
+  images       Json?
+  isVerified   Boolean  @default(false)
+  isApproved   Boolean  @default(false)
+  helpfulCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   user    User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   package CharterTravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
@@ -471,8 +487,8 @@ model DepartureHotelPricing {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  departureOption CharterDepartureOption @relation(fields: [departureOptionId], references: [id], onDelete: Cascade)
-  hotelOption     CharterPackageHotelOption @relation(fields: [hotelOptionId], references: [id], onDelete: Cascade)
+  departureOption  CharterDepartureOption    @relation(fields: [departureOptionId], references: [id], onDelete: Cascade)
+  hotelOption      CharterPackageHotelOption @relation(fields: [hotelOptionId], references: [id], onDelete: Cascade)
   roomTypePricings RoomTypePricing[]
 
   @@unique([departureOptionId, hotelOptionId])
@@ -496,4 +512,3 @@ model RoomTypePricing {
   @@unique([departureHotelPricingId, roomType])
   @@index([departureHotelPricingId])
 }
-

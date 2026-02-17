@@ -23,7 +23,7 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
       "script-src-elem 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.googleapis.com https://*.gstatic.com",
       "style-src 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.googleapis.com https://*.gstatic.com",
       "img-src 'self' data: https: https://*.googleapis.com https://*.gstatic.com",
-      "font-src 'self' data: https://*.clerk.com https://*.clerk.accounts.dev",
+      "font-src 'self' data: https://fonts.gstatic.com https://*.clerk.com https://*.clerk.accounts.dev",
       "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.amadeus.com https://*.paymob.com https://*.googleapis.com https://*.gstatic.com",
       "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev",
       "worker-src 'self' blob:",

@@ -47,21 +47,13 @@ export function GoogleMapsPicker({
       return;
     }
 
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
-        setMapLoaded(true);
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    };
-
-    loadGoogleMaps();
+    import("@/lib/google-maps-loader").then(({ loadGoogleMapsScript }) => {
+      loadGoogleMapsScript(apiKey, ["places"])
+        .then(() => setMapLoaded(true))
+        .catch((error) => {
+          console.error("Failed to load Google Maps:", error);
+        });
+    });
   }, [apiKey]);
 
   useEffect(() => {

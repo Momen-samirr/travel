@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
 
@@ -24,34 +24,33 @@ export function HotelMap({ hotels }: HotelMapProps) {
   const [mapLoaded, setMapLoaded] = useState(false);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
+  const mapInitializedRef = useRef(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
-  const validHotels = hotels.filter(
-    (h) => h.latitude !== null && h.longitude !== null
+  const validHotels = useMemo(
+    () => hotels.filter((h) => h.latitude !== null && h.longitude !== null),
+    [hotels]
   );
 
-  useEffect(() => {
-    if (!apiKey || validHotels.length === 0) return;
-
-    const loadGoogleMaps = () => {
-      if (window.google && window.google.maps) {
-        setMapLoaded(true);
-        return;
-      }
-
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => setMapLoaded(true);
-      document.head.appendChild(script);
-    };
-
-    loadGoogleMaps();
-  }, [apiKey, validHotels.length]);
+  const validHotelsLength = validHotels.length;
 
   useEffect(() => {
-    if (!mapLoaded || !mapRef.current || !window.google || validHotels.length === 0) return;
+    if (!apiKey || validHotelsLength === 0) return;
+
+    import("@/lib/google-maps-loader").then(({ loadGoogleMapsScript }) => {
+      loadGoogleMapsScript(apiKey)
+        .then(() => setMapLoaded(true))
+        .catch((error) => {
+          console.error("Failed to load Google Maps:", error);
+        });
+    });
+  }, [apiKey, validHotelsLength]);
+
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current || !window.google || validHotelsLength === 0) return;
+    
+    // Prevent re-initialization if map is already initialized
+    if (mapInitializedRef.current) return;
 
     const bounds = new window.google.maps.LatLngBounds();
     const mapInstance = new window.google.maps.Map(mapRef.current, {
@@ -102,9 +101,10 @@ export function HotelMap({ hotels }: HotelMapProps) {
       }
     }
 
+    mapInitializedRef.current = true;
     setMap(mapInstance);
     setMarkers(markerInstances);
-  }, [mapLoaded, validHotels]);
+  }, [mapLoaded, validHotelsLength]); // Only primitive values for stable dependency array
 
   if (!apiKey) {
     return (

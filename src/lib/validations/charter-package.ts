@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { PackageType } from "@/services/packages/types";
 
 export const charterPackageSchema = z.object({
+  type: z.nativeEnum(PackageType).default(PackageType.HOTEL_CHARTER),
   name: z.string().min(1, "Name is required").max(200),
   slug: z.string().min(1, "Slug is required"),
   description: z.string().min(1, "Description is required"),
