@@ -95,7 +95,7 @@ export function PriceBreakdown({
             {hotelRoomCost > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
-                  Hotel Room ({numberOfAdults} {numberOfAdults === 1 ? "adult" : "adults"})
+                  Adults ({numberOfAdults} {numberOfAdults === 1 ? "adult" : "adults"})
                 </span>
                 <span>{formatCurrency(hotelRoomCost, currency)}</span>
               </div>
@@ -122,7 +122,9 @@ export function PriceBreakdown({
             {addonsCost > 0 && (
               <div className="space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Add-ons</span>
+                  <span className="text-muted-foreground">
+                    Add-ons ({totalTravelers} {totalTravelers === 1 ? "person" : "people"})
+                  </span>
                   <span>{formatCurrency(addonsCost, currency)}</span>
                 </div>
                 {selectedAddons.length > 0 && (
@@ -130,7 +132,9 @@ export function PriceBreakdown({
                     {selectedAddons.map((addon) => (
                       <div key={addon.id} className="flex justify-between">
                         <span>{addon.name}</span>
-                        <span>{formatCurrency(addon.price, currency)}</span>
+                        <span>
+                          {formatCurrency(addon.price, currency)} × {totalTravelers} = {formatCurrency(addon.price * totalTravelers, currency)}
+                        </span>
                       </div>
                     ))}
                   </div>

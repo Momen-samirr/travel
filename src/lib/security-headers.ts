@@ -13,23 +13,22 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
     "camera=(), microphone=(), geolocation=()"
   );
 
-  // Only add strict CSP in production
-  if (process.env.NODE_ENV === "production") {
-    response.headers.set(
-      "Content-Security-Policy",
-      [
-        "default-src 'self'",
-        "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev",
-        "script-src-elem 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev",
-        "style-src 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev",
-        "img-src 'self' data: https:",
-        "font-src 'self' data: https://*.clerk.com https://*.clerk.accounts.dev",
-        "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.amadeus.com https://*.paymob.com",
-        "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev",
-        "worker-src 'self' blob:",
-      ].join("; ")
-    );
-  }
+  // Add CSP in both development and production
+  // In development, we still need CSP for Google Maps and other external resources
+  response.headers.set(
+    "Content-Security-Policy",
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.googleapis.com https://*.gstatic.com",
+      "script-src-elem 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.googleapis.com https://*.gstatic.com",
+      "style-src 'self' 'unsafe-inline' https://*.clerk.com https://*.clerk.accounts.dev https://*.googleapis.com https://*.gstatic.com",
+      "img-src 'self' data: https: https://*.googleapis.com https://*.gstatic.com",
+      "font-src 'self' data: https://*.clerk.com https://*.clerk.accounts.dev",
+      "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.amadeus.com https://*.paymob.com https://*.googleapis.com https://*.gstatic.com",
+      "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev",
+      "worker-src 'self' blob:",
+    ].join("; ")
+  );
 
   return response;
 }

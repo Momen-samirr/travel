@@ -269,12 +269,12 @@ export async function POST(request: NextRequest) {
         departureModifier = Number(departureOption.priceModifier);
       }
 
-      // Calculate hotel room cost from RoomTypePricing
+      // Calculate costs from RoomTypePricing (per-person pricing)
       const numberOfAdults = data.numberOfAdults || data.numberOfGuests || 1;
       const numberOfChildren = data.numberOfChildren || 0;
       const numberOfInfants = data.numberOfInfants || 0;
 
-      let hotelRoomCost = 0;
+      let adultCost = 0;
       let childrenCost = 0;
       let infantsCost = 0;
 
@@ -290,28 +290,44 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // Calculate number of rooms based on room type
-        let numberOfRooms = 1;
-        if (data.roomType === "SINGLE") {
-          numberOfRooms = numberOfAdults;
-        } else if (data.roomType === "DOUBLE") {
-          numberOfRooms = Math.ceil(numberOfAdults / 2);
-        } else if (data.roomType === "TRIPLE") {
-          numberOfRooms = Math.ceil(numberOfAdults / 3);
-        } else if (data.roomType === "QUAD") {
-          numberOfRooms = Math.ceil(numberOfAdults / 4);
+        // Validate adult price exists and is valid
+        const adultPrice = Number(roomTypePricing.price);
+        if (!adultPrice || adultPrice <= 0) {
+          return NextResponse.json(
+            { error: `Invalid adult price configured for room type ${data.roomType}`, message: `Invalid adult price configured for room type ${data.roomType}` },
+            { status: 400 }
+          );
         }
 
-        hotelRoomCost = Number(roomTypePricing.price) * numberOfRooms;
+        // Adult cost: price per adult × number of adults
+        adultCost = adultPrice * numberOfAdults;
 
-        // Calculate children cost from room type pricing
-        if (numberOfChildren > 0 && roomTypePricing.childPrice) {
-          childrenCost = Number(roomTypePricing.childPrice) * numberOfChildren;
+        // Calculate children cost from room type pricing (per child)
+        if (numberOfChildren > 0) {
+          if (roomTypePricing.childPrice) {
+            const childPrice = Number(roomTypePricing.childPrice);
+            if (childPrice > 0) {
+              childrenCost = childPrice * numberOfChildren;
+            } else {
+              console.warn(`Invalid child price for room type ${data.roomType}: ${childPrice}`);
+            }
+          } else {
+            console.warn(`Child price not configured for room type ${data.roomType}, children cost will be 0`);
+          }
         }
 
-        // Calculate infants cost from room type pricing
-        if (numberOfInfants > 0 && roomTypePricing.infantPrice) {
-          infantsCost = Number(roomTypePricing.infantPrice) * numberOfInfants;
+        // Calculate infants cost from room type pricing (per infant)
+        if (numberOfInfants > 0) {
+          if (roomTypePricing.infantPrice) {
+            const infantPrice = Number(roomTypePricing.infantPrice);
+            if (infantPrice > 0) {
+              infantsCost = infantPrice * numberOfInfants;
+            } else {
+              console.warn(`Invalid infant price for room type ${data.roomType}: ${infantPrice}`);
+            }
+          } else {
+            console.warn(`Infant price not configured for room type ${data.roomType}, infant cost will be 0`);
+          }
         }
       } else {
         return NextResponse.json(
@@ -320,37 +336,33 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Calculate add-ons cost
+      // Calculate total directly: sum of all costs
+      const totalTravelers = numberOfAdults + numberOfChildren + numberOfInfants;
+
+      // Calculate add-ons cost (multiplied by number of travelers)
       let addonsCost = 0;
       if (data.selectedAddonIds && Array.isArray(data.selectedAddonIds)) {
         data.selectedAddonIds.forEach((addonId) => {
           const addon = pkg.addons.find((a) => a.id === addonId);
           if (addon) {
-            addonsCost += Number(addon.price);
+            // Add-on price is per person, so multiply by total travelers
+            addonsCost += Number(addon.price) * totalTravelers;
           }
         });
       }
+      
+      // Subtotal = adult cost + children cost + infants cost + addons cost
+      // Note: basePrice and departureModifier are not included in the new pricing architecture
+      // as pricing is defined per departure option and room type
+      const subtotal = adultCost + childrenCost + infantsCost + addonsCost;
 
-      // Calculate subtotal per person
-      const totalTravelers = numberOfAdults + numberOfChildren + numberOfInfants;
-      // Base price is optional - only add if configured
-      // With new pricing architecture, room type pricing is the primary source
-      const subtotalPerPerson =
-        (basePrice || 0) +
-        departureModifier +
-        (hotelRoomCost / Math.max(numberOfAdults, 1)) +
-        (childrenCost / Math.max(numberOfAdults, 1)) +
-        (infantsCost / Math.max(numberOfAdults, 1)) +
-        (addonsCost / Math.max(numberOfAdults, 1));
-
-      // Apply discount
+      // Apply discount to total if configured
       let discount = 0;
-      if (pkg.discount) {
-        discount = (subtotalPerPerson * Number(pkg.discount)) / 100;
+      if (pkg.discount && subtotal > 0) {
+        discount = (subtotal * Number(pkg.discount)) / 100;
       }
 
-      const totalPerPerson = subtotalPerPerson - discount;
-      totalAmount = totalPerPerson * totalTravelers;
+      totalAmount = subtotal - discount;
       currency = pkg.currency;
     }
 

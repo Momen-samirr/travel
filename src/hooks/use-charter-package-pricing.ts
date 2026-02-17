@@ -98,7 +98,7 @@ export function useCharterPackagePricing(
       }
     }
 
-    // Calculate hotel room cost from RoomTypePricing
+    // Calculate adult cost from RoomTypePricing (per-adult pricing)
     if (
       selections.hotelOptionId &&
       selections.roomType &&
@@ -113,31 +113,45 @@ export function useCharterPackagePricing(
         );
 
         if (roomTypePricing) {
-          // Calculate number of rooms based on room type
-          let numberOfRooms = 1;
-          if (selections.roomType === "SINGLE") {
-            numberOfRooms = selections.numberOfAdults;
-          } else if (selections.roomType === "DOUBLE") {
-            numberOfRooms = Math.ceil(selections.numberOfAdults / 2);
-          } else if (selections.roomType === "TRIPLE") {
-            numberOfRooms = Math.ceil(selections.numberOfAdults / 3);
-          } else if (selections.roomType === "QUAD") {
-            numberOfRooms = Math.ceil(selections.numberOfAdults / 4);
+          // Validate pricing data exists
+          const adultPrice = toNumber(roomTypePricing.price);
+          if (adultPrice <= 0) {
+            console.warn(`Invalid adult price for room type ${selections.roomType}: ${adultPrice}`);
           }
 
-          hotelRoomCost = toNumber(roomTypePricing.price) * numberOfRooms;
+          // Adult cost: price per adult × number of adults
+          hotelRoomCost = adultPrice * selections.numberOfAdults;
 
-          // Calculate children cost from room type pricing
-          if (selections.numberOfChildren > 0 && roomTypePricing.childPrice) {
-            childrenCost = toNumber(roomTypePricing.childPrice) * selections.numberOfChildren;
+          // Calculate children cost from room type pricing (per child)
+          if (selections.numberOfChildren > 0) {
+            if (roomTypePricing.childPrice) {
+              const childPrice = toNumber(roomTypePricing.childPrice);
+              if (childPrice > 0) {
+                childrenCost = childPrice * selections.numberOfChildren;
+              } else {
+                console.warn(`Invalid child price for room type ${selections.roomType}: ${childPrice}`);
+              }
+            } else {
+              console.warn(`Child price not configured for room type ${selections.roomType}`);
+            }
           }
 
-          // Calculate infants cost from room type pricing
-          if (selections.numberOfInfants > 0 && roomTypePricing.infantPrice) {
-            infantsCost = toNumber(roomTypePricing.infantPrice) * selections.numberOfInfants;
+          // Calculate infants cost from room type pricing (per infant)
+          if (selections.numberOfInfants > 0) {
+            if (roomTypePricing.infantPrice) {
+              const infantPrice = toNumber(roomTypePricing.infantPrice);
+              if (infantPrice > 0) {
+                infantsCost = infantPrice * selections.numberOfInfants;
+              } else {
+                console.warn(`Invalid infant price for room type ${selections.roomType}: ${infantPrice}`);
+              }
+            } else {
+              console.warn(`Infant price not configured for room type ${selections.roomType}`);
+            }
           }
         } else {
           // If room type pricing not found, use base price as fallback
+          console.warn(`Room type pricing not found for ${selections.roomType}, using base price fallback`);
           hotelRoomCost = basePrice * selections.numberOfAdults;
         }
       } else {
@@ -149,37 +163,58 @@ export function useCharterPackagePricing(
       hotelRoomCost = basePrice * selections.numberOfAdults;
     }
 
-    // Calculate add-ons cost
-    if (selections.selectedAddonIds.length > 0) {
-      selections.selectedAddonIds.forEach((addonId) => {
-        const addon = packageData.addons.find((a) => a.id === addonId);
-        if (addon) {
-          addonsCost += toNumber(addon.price);
-        }
-      });
-    }
-
-    // Calculate subtotal per person
-    const subtotalPerPerson =
-      basePrice +
-      departureModifier +
-      (hotelRoomCost / Math.max(selections.numberOfAdults, 1)) +
-      (childrenCost / Math.max(selections.numberOfAdults, 1)) +
-      (infantsCost / Math.max(selections.numberOfAdults, 1)) +
-      (addonsCost / Math.max(selections.numberOfAdults, 1));
-
-    // Apply discount
-    let discount = 0;
-    if (packageData.discount) {
-      discount = (subtotalPerPerson * toNumber(packageData.discount)) / 100;
-    }
-
-    const totalPerPerson = subtotalPerPerson - discount;
+    // Calculate add-ons cost (multiplied by number of travelers)
     const totalTravelers =
       selections.numberOfAdults +
       selections.numberOfChildren +
       selections.numberOfInfants;
-    const total = totalPerPerson * totalTravelers;
+    
+    if (selections.selectedAddonIds.length > 0) {
+      selections.selectedAddonIds.forEach((addonId) => {
+        const addon = packageData.addons.find((a) => a.id === addonId);
+        if (addon) {
+          // Add-on price is per person, so multiply by total travelers
+          addonsCost += toNumber(addon.price) * totalTravelers;
+        }
+      });
+    }
+
+    // Calculate total directly: sum of all costs
+    // totalTravelers already calculated above for add-ons
+    
+    // Subtotal = adult cost + children cost + infants cost + addons cost
+    // Note: basePrice and departureModifier are not included in the new pricing architecture
+    // as pricing is defined per departure option and room type
+    const subtotal = hotelRoomCost + childrenCost + infantsCost + addonsCost;
+
+    // Apply discount to total if configured
+    let discount = 0;
+    if (packageData.discount && subtotal > 0) {
+      discount = (subtotal * toNumber(packageData.discount)) / 100;
+    }
+
+    const total = subtotal - discount;
+    
+    // Calculate per-person price for display purposes only
+    const totalPerPerson = totalTravelers > 0 ? total / totalTravelers : 0;
+
+    // Debug logging in development
+    if (process.env.NODE_ENV === "development") {
+      console.log("Pricing Calculation:", {
+        adults: selections.numberOfAdults,
+        children: selections.numberOfChildren,
+        infants: selections.numberOfInfants,
+        adultCost: hotelRoomCost,
+        childrenCost,
+        infantsCost,
+        addonsCost,
+        subtotal,
+        discount,
+        total,
+        totalPerPerson,
+        currency,
+      });
+    }
 
     return {
       basePrice,
@@ -188,8 +223,8 @@ export function useCharterPackagePricing(
       childrenCost,
       infantsCost,
       addonsCost,
-      subtotal: subtotalPerPerson * totalTravelers,
-      discount: discount * totalTravelers,
+      subtotal,
+      discount,
       total,
       totalPerPerson,
       currency,
