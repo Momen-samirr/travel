@@ -28,23 +28,19 @@ export default async function EditHotelPage({
     notFound();
   }
 
-  const initialData: HotelInput & { id?: string } = {
+  const initialData: HotelInput & { id?: string; placeId?: string | null } = {
     id: hotel.id,
     name: hotel.name,
-    slug: hotel.slug,
     description: hotel.description || "",
     address: hotel.address || "",
     city: hotel.city,
     country: hotel.country,
     latitude: hotel.latitude ?? null,
     longitude: hotel.longitude ?? null,
-    pricePerNight: Number(hotel.pricePerNight),
-    currency: hotel.currency,
+    placeId: hotel.placeId ?? null,
     rating: hotel.rating ?? null,
-    amenities: hotel.amenities as string[],
+    amenities: (hotel.amenities as string[]) || [],
     images: hotel.images as string[],
-    checkInTime: hotel.checkInTime ?? null,
-    checkOutTime: hotel.checkOutTime ?? null,
     isActive: hotel.isActive,
   };
 

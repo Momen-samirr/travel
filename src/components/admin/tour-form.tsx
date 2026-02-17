@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface TourFormProps {

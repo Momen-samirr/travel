@@ -46,6 +46,32 @@ export default async function BookingDetailPage({
           type: true,
         },
       },
+      charterPackage: {
+        select: {
+          name: true,
+          slug: true,
+        },
+      },
+      charterHotelOption: {
+        include: {
+          hotel: {
+            select: {
+              name: true,
+              city: true,
+              country: true,
+            },
+          },
+        },
+      },
+      charterDepartureOption: {
+        select: {
+          departureAirport: true,
+          arrivalAirport: true,
+          departureDate: true,
+          returnDate: true,
+          priceModifier: true,
+        },
+      },
     },
   });
 
@@ -54,6 +80,7 @@ export default async function BookingDetailPage({
   }
 
   const getBookingTitle = () => {
+    if (booking.charterPackage) return booking.charterPackage.name;
     if (booking.tour) return booking.tour.title;
     if (booking.flight)
       return `${booking.flight.origin} → ${booking.flight.destination}`;
@@ -142,6 +169,69 @@ export default async function BookingDetailPage({
               </div>
             </CardContent>
           </Card>
+
+          {booking.bookingType === "CHARTER_PACKAGE" && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Package Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {booking.charterHotelOption && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Selected Hotel</div>
+                    <div className="font-semibold">
+                      {booking.charterHotelOption.hotel.name}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {booking.charterHotelOption.hotel.city}, {booking.charterHotelOption.hotel.country}
+                    </div>
+                  </div>
+                )}
+                {booking.roomType && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Room Type</div>
+                    <div>{booking.roomType === "SINGLE" ? "Single Room" : "Double Room"}</div>
+                  </div>
+                )}
+                {booking.charterDepartureOption && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Departure</div>
+                    <div className="font-semibold">
+                      {booking.charterDepartureOption.departureAirport} → {booking.charterDepartureOption.arrivalAirport}
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      {formatDate(booking.charterDepartureOption.departureDate)} - {formatDate(booking.charterDepartureOption.returnDate)}
+                    </div>
+                    {booking.charterDepartureOption.priceModifier && (
+                      <div className="text-sm">
+                        Price Modifier:{" "}
+                        {Number(booking.charterDepartureOption.priceModifier) > 0 ? "+" : ""}
+                        {formatCurrency(Number(booking.charterDepartureOption.priceModifier), booking.currency)}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {(booking.numberOfAdults || booking.numberOfChildren || booking.numberOfInfants) && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Travelers</div>
+                    <div>
+                      {booking.numberOfAdults && `${booking.numberOfAdults} Adult${booking.numberOfAdults > 1 ? "s" : ""}`}
+                      {booking.numberOfChildren && ` • ${booking.numberOfChildren} Child${booking.numberOfChildren > 1 ? "ren" : ""}`}
+                      {booking.numberOfInfants && ` • ${booking.numberOfInfants} Infant${booking.numberOfInfants > 1 ? "s" : ""}`}
+                    </div>
+                  </div>
+                )}
+                {booking.selectedAddonIds && Array.isArray(booking.selectedAddonIds) && booking.selectedAddonIds.length > 0 && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">Selected Add-ons</div>
+                    <div className="text-sm">
+                      {booking.selectedAddonIds.length} add-on{booking.selectedAddonIds.length > 1 ? "s" : ""} selected
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
             <CardHeader>

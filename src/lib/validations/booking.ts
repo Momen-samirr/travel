@@ -6,7 +6,7 @@ const legacyGuestDetailsSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(1, "Phone number is required"),
+  phone: z.string().min(1, "Phone number is required").or(z.literal("N/A")),
   nationality: z.string().optional(),
   passportNumber: z.string().optional(),
   specialRequests: z.string().optional(),
@@ -19,11 +19,12 @@ const flightGuestDetailsSchema = z.object({
 });
 
 export const bookingSchema = z.object({
-  bookingType: z.enum(["TOUR", "FLIGHT", "HOTEL", "VISA"]),
+  bookingType: z.enum(["TOUR", "FLIGHT", "HOTEL", "VISA", "CHARTER_PACKAGE"]),
   tourId: z.string().optional().nullable(),
   flightId: z.string().optional().nullable(),
   hotelId: z.string().optional().nullable(),
   visaId: z.string().optional().nullable(),
+  charterPackageId: z.string().optional().nullable(),
   travelDate: z.union([z.date(), z.string()]).optional().nullable().transform((val) => {
     if (!val) return null;
     if (typeof val === "string") return new Date(val);
@@ -38,6 +39,14 @@ export const bookingSchema = z.object({
   // Optional fields that can be provided for flight bookings
   totalAmount: z.number().positive().optional(), // Total amount (for flight bookings)
   currency: z.string().optional(), // Currency (for flight bookings)
+  // Charter Package specific fields
+  charterHotelOptionId: z.string().optional().nullable(),
+  charterDepartureOptionId: z.string().optional().nullable(),
+  roomType: z.enum(["SINGLE", "DOUBLE", "TRIPLE", "QUAD"]).optional().nullable(),
+  numberOfAdults: z.number().int().positive().optional(),
+  numberOfChildren: z.number().int().min(0).optional(),
+  numberOfInfants: z.number().int().min(0).optional(),
+  selectedAddonIds: z.array(z.string()).optional(),
 });
 
 export type BookingInput = z.infer<typeof bookingSchema>;

@@ -18,8 +18,6 @@ interface HotelCardProps {
     description: string | null;
     city: string;
     country: string;
-    pricePerNight: any;
-    currency: string;
     images: any;
     rating: number | null;
   };
@@ -70,13 +68,7 @@ export function HotelCard({ hotel }: HotelCardProps) {
               </p>
             )}
 
-            <div className="flex items-center justify-between pt-4 border-t">
-              <div>
-                <div className="text-2xl font-bold text-primary">
-                  {formatCurrency(Number(hotel.pricePerNight), hotel.currency)}
-                </div>
-                <div className="text-sm text-muted-foreground">per night</div>
-              </div>
+            <div className="flex items-center justify-end pt-4 border-t">
               <Button asChild size="sm" className="rounded-full">
                 <Link href={`/hotels/${hotel.slug}`}>
                   View Details

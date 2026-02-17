@@ -1,6 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import Image from "next/image";
-import { formatCurrency } from "@/lib/utils";
 import { HomepageSearchWidget } from "@/components/home/homepage-search-widget";
 import { PopularToursSection } from "@/components/home/popular-tours-section";
 import { TrustIndicators } from "@/components/home/trust-indicators";
@@ -10,24 +8,33 @@ import { ServicesOverview } from "@/components/home/services-overview";
 import { WhyChooseUs } from "@/components/home/why-choose-us";
 
 export default async function HomePage() {
-  let featuredTours: any[] = [];
+  let featuredPackages: any[] = [];
   try {
-    const toursData = await prisma.tour.findMany({
+    const packagesData = await prisma.charterTravelPackage.findMany({
       where: {
         isActive: true,
-        isFeatured: true,
       },
       take: 6,
       orderBy: { createdAt: "desc" },
+      include: {
+        _count: {
+          select: {
+            departureOptions: true,
+            hotelOptions: true,
+          },
+        },
+      },
     });
     
-    featuredTours = toursData.map((tour) => ({
-      ...tour,
-      price: tour.price ? Number(tour.price) : null,
-      discountPrice: tour.discountPrice ? Number(tour.discountPrice) : null,
+    featuredPackages = packagesData.map((pkg) => ({
+      ...pkg,
+      basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
+      priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
+      priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
+      discount: pkg.discount ? Number(pkg.discount) : null,
     }));
   } catch (error) {
-    console.error("Error fetching featured tours:", error);
+    console.error("Error fetching featured packages:", error);
   }
 
   return (
@@ -38,8 +45,8 @@ export default async function HomePage() {
 
       <TrustIndicators />
 
-      {featuredTours.length > 0 && (
-        <PopularToursSection tours={featuredTours} />
+      {featuredPackages.length > 0 && (
+        <PopularToursSection packages={featuredPackages} />
       )}
 
       <ServicesOverview />

@@ -26,7 +26,6 @@ export default async function HotelsPage({
   // Convert Decimal fields to numbers for client components
   const hotels = hotelsData.map((hotel) => ({
     ...hotel,
-    pricePerNight: hotel.pricePerNight ? Number(hotel.pricePerNight) : null,
   }));
 
   return (

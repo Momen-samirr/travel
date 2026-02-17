@@ -45,6 +45,7 @@ export async function PUT(
       where: { id },
       data: {
         ...data,
+        placeId: (data as any).placeId || null,
         amenities: data.amenities as any,
         images: data.images as any,
       },

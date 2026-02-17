@@ -16,6 +16,7 @@ import {
   Users,
   ShoppingCart,
   Activity,
+  Package,
 } from "lucide-react";
 
 const menuItems = [
@@ -24,6 +25,7 @@ const menuItems = [
   { href: "/admin/bookings", label: "Bookings", icon: ShoppingCart },
   { href: "/admin/activity", label: "Activity", icon: Activity },
   { href: "/admin/tours", label: "Tours", icon: MapPin },
+  { href: "/admin/charter-packages", label: "Charter Packages", icon: Package },
   { href: "/admin/flights", label: "Flights", icon: Plane },
   { href: "/admin/hotels", label: "Hotels", icon: Hotel },
   { href: "/admin/visas", label: "Visas", icon: FileText },

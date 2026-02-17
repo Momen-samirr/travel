@@ -232,7 +232,6 @@ export default async function HotelDetailPage({
               )}
               <div className="pt-4 border-t">
                 <div className="text-3xl font-bold text-primary mb-4">
-                  {formatCurrency(Number(hotel.pricePerNight), hotel.currency)} / night
                 </div>
                 <Button asChild className="w-full" size="lg">
                   <Link href={`/hotels/${hotel.slug}/book`}>Book Now</Link>

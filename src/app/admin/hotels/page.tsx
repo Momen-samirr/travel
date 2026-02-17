@@ -48,7 +48,6 @@ export default async function AdminHotelsPage() {
             <TableRow>
               <TableHead>Name</TableHead>
               <TableHead>Location</TableHead>
-              <TableHead>Price per Night</TableHead>
               <TableHead>Rating</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
@@ -60,9 +59,6 @@ export default async function AdminHotelsPage() {
                 <TableCell className="font-medium">{hotel.name}</TableCell>
                 <TableCell>
                   {hotel.city}, {hotel.country}
-                </TableCell>
-                <TableCell>
-                  {formatCurrency(Number(hotel.pricePerNight), hotel.currency)}
                 </TableCell>
                 <TableCell>{hotel.rating || "N/A"}</TableCell>
                 <TableCell>

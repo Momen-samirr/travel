@@ -83,7 +83,6 @@ export default async function HotelBookingPage({
                 )}
                 <div className="pt-4 border-t">
                   <div className="text-2xl font-bold text-primary">
-                    {formatCurrency(Number(hotel.pricePerNight), hotel.currency)} / night
                   </div>
                 </div>
                 {amenities.length > 0 && (

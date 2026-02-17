@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,6 +19,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GoogleMapsPicker } from "./google-maps-picker";
 
 interface HotelFormProps {
   initialData?: HotelInput & { id?: string };
@@ -33,44 +33,46 @@ export function HotelForm({ initialData }: HotelFormProps) {
   const [amenityInput, setAmenityInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [locationData, setLocationData] = useState({
+    latitude: initialData?.latitude ?? null,
+    longitude: initialData?.longitude ?? null,
+    placeId: (initialData as any)?.placeId ?? null,
+    address: initialData?.address || "",
+    city: initialData?.city || "",
+    country: initialData?.country || "",
+  });
 
   const form = useForm<HotelInput>({
     resolver: zodResolver(hotelSchema) as any,
-    defaultValues: initialData ? {
-      name: initialData.name,
-      slug: initialData.slug,
-      description: initialData.description,
-      address: initialData.address,
-      city: initialData.city,
-      country: initialData.country,
-      latitude: initialData.latitude ?? null,
-      longitude: initialData.longitude ?? null,
-      pricePerNight: initialData.pricePerNight,
-      currency: initialData.currency ?? "EGP",
-      rating: initialData.rating ?? null,
-      amenities: initialData.amenities,
-      images: initialData.images,
-      checkInTime: initialData.checkInTime ?? null,
-      checkOutTime: initialData.checkOutTime ?? null,
-      isActive: initialData.isActive ?? true,
-    } : {
-      name: "",
-      slug: "",
-      description: "",
-      address: "",
-      city: "",
-      country: "",
-      latitude: null,
-      longitude: null,
-      pricePerNight: 0,
-      currency: "EGP",
-      rating: null,
-      amenities: [],
-      images: [],
-      checkInTime: null,
-      checkOutTime: null,
-      isActive: true,
-    },
+    defaultValues: initialData
+      ? {
+          name: initialData.name,
+          description: initialData.description,
+          address: initialData.address,
+          city: initialData.city,
+          country: initialData.country,
+          latitude: initialData.latitude ?? null,
+          longitude: initialData.longitude ?? null,
+          placeId: (initialData as any)?.placeId ?? null,
+          rating: initialData.rating ?? null,
+          amenities: initialData.amenities || [],
+          images: initialData.images,
+          isActive: initialData.isActive ?? true,
+        }
+      : {
+          name: "",
+          description: "",
+          address: "",
+          city: "",
+          country: "",
+          latitude: null,
+          longitude: null,
+          placeId: null,
+          rating: null,
+          amenities: [],
+          images: [],
+          isActive: true,
+        },
   });
 
   const handleImageUpload = async (file: File) => {
@@ -128,6 +130,23 @@ export function HotelForm({ initialData }: HotelFormProps) {
     form.setValue("amenities", newAmenities);
   };
 
+  const handleLocationChange = (data: {
+    latitude: number | null;
+    longitude: number | null;
+    placeId: string | null;
+    address: string;
+    city: string;
+    country: string;
+  }) => {
+    setLocationData(data);
+    form.setValue("latitude", data.latitude);
+    form.setValue("longitude", data.longitude);
+    form.setValue("placeId", data.placeId);
+    form.setValue("address", data.address);
+    if (data.city) form.setValue("city", data.city);
+    if (data.country) form.setValue("country", data.country);
+  };
+
   const onSubmit = async (data: HotelInput) => {
     setSubmitting(true);
     try {
@@ -136,10 +155,17 @@ export function HotelForm({ initialData }: HotelFormProps) {
         : "/api/hotels";
       const method = initialData?.id ? "PUT" : "POST";
 
+      const payload = {
+        ...data,
+        placeId: locationData.placeId,
+        images,
+        amenities,
+      };
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, images, amenities }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
@@ -186,16 +212,25 @@ export function HotelForm({ initialData }: HotelFormProps) {
 
           <FormField
             control={form.control}
-            name="slug"
+            name="rating"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Slug</FormLabel>
+                <FormLabel>Star Rating (0-5)</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    max="5"
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value ? parseFloat(e.target.value) : null
+                      )
+                    }
+                  />
                 </FormControl>
-                <FormDescription>
-                  URL-friendly version of the name
-                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -242,141 +277,6 @@ export function HotelForm({ initialData }: HotelFormProps) {
               </FormItem>
             )}
           />
-
-          <FormField
-            control={form.control}
-            name="pricePerNight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Price per Night</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="currency"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Currency</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="rating"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Rating (0-5)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : null
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="checkInTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Check-in Time</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value || ""} placeholder="14:00" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="checkOutTime"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Check-out Time</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value || ""} placeholder="11:00" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="latitude"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Latitude (Optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : null
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="longitude"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Longitude (Optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="any"
-                    {...field}
-                    value={field.value || ""}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : null
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
         <FormField
@@ -393,9 +293,19 @@ export function HotelForm({ initialData }: HotelFormProps) {
           )}
         />
 
+        <GoogleMapsPicker
+          latitude={locationData.latitude}
+          longitude={locationData.longitude}
+          placeId={locationData.placeId}
+          address={locationData.address}
+          city={locationData.city}
+          country={locationData.country}
+          onLocationChange={handleLocationChange}
+        />
+
         <Card>
           <CardHeader>
-            <CardTitle>Amenities</CardTitle>
+            <CardTitle>Amenities (Optional)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex gap-2">
@@ -469,7 +379,9 @@ export function HotelForm({ initialData }: HotelFormProps) {
                 }}
                 disabled={uploading}
               />
-              {uploading && <p className="text-sm text-gray-600 mt-2">Uploading...</p>}
+              {uploading && (
+                <p className="text-sm text-gray-600 mt-2">Uploading...</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -494,7 +406,11 @@ export function HotelForm({ initialData }: HotelFormProps) {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={uploading || submitting}>
-            {submitting ? "Saving..." : initialData ? "Update Hotel" : "Create Hotel"}
+            {submitting
+              ? "Saving..."
+              : initialData
+              ? "Update Hotel"
+              : "Create Hotel"}
           </Button>
           <Button
             type="button"
@@ -509,4 +425,3 @@ export function HotelForm({ initialData }: HotelFormProps) {
     </Form>
   );
 }
-
