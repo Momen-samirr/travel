@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plane, MapPin, Hotel, FileText, Search } from "lucide-react";
+import { Plane, MapPin, Hotel, Search } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -26,7 +26,7 @@ export function HomepageSearchWidget() {
       <Card className="w-full max-w-4xl mx-auto shadow-2xl border-0 bg-white/95 backdrop-blur-md">
         <CardContent className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-6">
+          <TabsList className="grid w-full grid-cols-3 mb-6">
             <TabsTrigger value="flights" className="flex items-center gap-2">
               <Plane className="h-4 w-4" />
               <span className="hidden sm:inline">Flights</span>
@@ -38,10 +38,6 @@ export function HomepageSearchWidget() {
             <TabsTrigger value="hotels" className="flex items-center gap-2">
               <Hotel className="h-4 w-4" />
               <span className="hidden sm:inline">Hotels</span>
-            </TabsTrigger>
-            <TabsTrigger value="visas" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Visas</span>
             </TabsTrigger>
           </TabsList>
 
@@ -85,18 +81,6 @@ export function HomepageSearchWidget() {
               </div>
             )}
 
-            {activeTab === "visas" && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => handleQuickSearch("visa")}
-                  size="lg"
-                  className="flex-1 h-14 text-base rounded-xl"
-                >
-                  <Search className="mr-2 h-5 w-5" />
-                  Visa Services
-                </Button>
-              </div>
-            )}
           </div>
         </Tabs>
       </CardContent>
