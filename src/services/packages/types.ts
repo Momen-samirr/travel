@@ -3,11 +3,9 @@
  */
 
 export enum PackageType {
-  HOTEL_CHARTER = "HOTEL_CHARTER",
+  CHARTER = "CHARTER",
   INBOUND = "INBOUND",
-  OUTBOUND = "OUTBOUND",
-  DOMESTIC = "DOMESTIC",
-  CUSTOM = "CUSTOM",
+  REGULAR = "REGULAR",
 }
 
 export interface TravelPackage {
@@ -57,11 +55,14 @@ export interface PackageSelections {
   hotelOptionId?: string;
   roomType?: "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD";
   numberOfAdults?: number;
-  numberOfChildren?: number;
+  numberOfChildren6to12?: number;
+  numberOfChildren2to6?: number;
   numberOfInfants?: number;
   selectedAddonIds?: string[];
   pickupLocation?: string; // For INBOUND
   transferOptions?: string[]; // For INBOUND
+  // Legacy field for backward compatibility
+  numberOfChildren?: number;
 }
 
 export interface PriceCalculation {

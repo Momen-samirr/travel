@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plane, MapPin, Hotel, ArrowRight } from "lucide-react";
+import { Plane, MapPin, Package, ArrowRight } from "lucide-react";
 import { FadeInSection } from "@/components/motion/fade-in-section";
 import { StaggerList, StaggerItem } from "@/components/motion/stagger-list";
 import { motion } from "framer-motion";
@@ -17,12 +17,12 @@ export function ServicesOverview() {
             <div className="text-center mb-16">
               <h2 className="text-4xl font-bold mb-4">Everything You Need for Your Trip</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                From flights to hotels and tours - we've got you covered for your next adventure
+                From flights to complete travel packages - we've got you covered for your next adventure
               </p>
             </div>
           </FadeInSection>
 
-          <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StaggerItem>
               <motion.div
                 whileHover={{ y: -8, scale: 1.02 }}
@@ -56,15 +56,15 @@ export function ServicesOverview() {
                 <Card className="card-hover border-2 hover:border-primary/50 h-full">
                   <CardContent className="p-8 text-center">
                     <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
-                      <MapPin className="h-8 w-8 text-accent" />
+                      <Package className="h-8 w-8 text-accent" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">Tours</h3>
+                    <h3 className="text-xl font-semibold mb-2">Charter Packages</h3>
                     <p className="text-muted-foreground mb-6">
-                      Discover amazing destinations with our curated tour packages and expert guides
+                      Complete travel bundles with flights, hotels, and more for your perfect getaway
                     </p>
                     <Button asChild variant="outline" className="w-full">
-                      <Link href="/tours">
-                        View Tours
+                      <Link href="/charter-packages">
+                        View Charter Packages
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
@@ -81,15 +81,40 @@ export function ServicesOverview() {
                 <Card className="card-hover border-2 hover:border-primary/50 h-full">
                   <CardContent className="p-8 text-center">
                     <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                      <Hotel className="h-8 w-8 text-primary" />
+                      <MapPin className="h-8 w-8 text-primary" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">Hotels</h3>
+                    <h3 className="text-xl font-semibold mb-2">Inbound Packages</h3>
                     <p className="text-muted-foreground mb-6">
-                      Find the perfect accommodation for your stay with our wide selection
+                      Local tourism packages without international flights - explore your destination
                     </p>
                     <Button asChild variant="outline" className="w-full">
-                      <Link href="/hotels">
-                        Browse Hotels
+                      <Link href="/inbound-packages">
+                        View Inbound Packages
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </StaggerItem>
+
+            <StaggerItem>
+              <motion.div
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card className="card-hover border-2 hover:border-primary/50 h-full">
+                  <CardContent className="p-8 text-center">
+                    <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-4">
+                      <Package className="h-8 w-8 text-accent" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Regular Packages</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Explore our regular travel packages designed for every type of traveler
+                    </p>
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href="/regular-packages">
+                        View Regular Packages
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>

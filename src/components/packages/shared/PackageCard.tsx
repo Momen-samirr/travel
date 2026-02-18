@@ -21,8 +21,15 @@ export function PackageCard({ package: pkg, showType = true }: PackageCardProps)
     ? formatCurrency(pkg.basePrice, pkg.currency)
     : "Contact for pricing";
 
+  const getPackageUrl = () => {
+    if (pkg.type === PackageType.CHARTER) return `/charter-packages/${pkg.slug}`;
+    if (pkg.type === PackageType.INBOUND) return `/inbound-packages/${pkg.slug}`;
+    if (pkg.type === PackageType.REGULAR) return `/regular-packages/${pkg.slug}`;
+    return `/packages/${pkg.slug}`;
+  };
+
   return (
-    <Link href={`/packages/${pkg.slug}`}>
+    <Link href={getPackageUrl()}>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
         <div className="relative w-full h-48">
           {pkg.mainImage ? (
@@ -64,7 +71,7 @@ export function PackageCard({ package: pkg, showType = true }: PackageCardProps)
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs">
-              {pkg.type === PackageType.HOTEL_CHARTER && (
+              {pkg.type === PackageType.CHARTER && (
                 <div className="flex items-center gap-1">
                   <Plane className="h-3 w-3" />
                   <span>Includes Flights</span>

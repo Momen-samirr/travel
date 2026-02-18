@@ -116,7 +116,7 @@ export function CharterPackagesPageContent({
   }, [searchParams]);
 
   const [filters, setFilters] = useState<CharterPackageFilters>(parseFiltersFromURL);
-  const [packages, setPackages] = useState<PackageData[]>(initialPackages);
+  const [packages, setPackages] = useState<PackageData[]>(initialPackages || []);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(initialPage);
@@ -346,7 +346,7 @@ export function CharterPackagesPageContent({
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : packages.length > 0 ? (
+          ) : packages && packages.length > 0 ? (
             <>
               <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {packages.map((pkg) => (

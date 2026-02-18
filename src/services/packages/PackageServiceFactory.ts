@@ -11,9 +11,10 @@ export class PackageServiceFactory {
 
   constructor() {
     // Register default services
-    this.services.set(PackageType.HOTEL_CHARTER, new HotelCharterService());
+    this.services.set(PackageType.CHARTER, new HotelCharterService());
     this.services.set(PackageType.INBOUND, new InboundPackageService());
-    // Future types can be registered here
+    // REGULAR packages can use HotelCharterService for now (same structure)
+    this.services.set(PackageType.REGULAR, new HotelCharterService());
   }
 
   /**
@@ -21,8 +22,8 @@ export class PackageServiceFactory {
    */
   getService(type?: PackageType | null): IPackageService {
     if (!type) {
-      // Default to Hotel Charter for backward compatibility
-      return this.services.get(PackageType.HOTEL_CHARTER)!;
+      // Default to Charter for backward compatibility
+      return this.services.get(PackageType.CHARTER)!;
     }
 
     const service = this.services.get(type);

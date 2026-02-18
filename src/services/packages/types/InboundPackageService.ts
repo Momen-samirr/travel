@@ -157,22 +157,25 @@ export class InboundPackageService implements IPackageService {
       let roomPrice = 0;
       if (pkg.hotelOptions[0]?.hotelPricings[0]?.roomTypePricings[0]) {
         const roomPricing = pkg.hotelOptions[0].hotelPricings[0].roomTypePricings[0];
-        roomPrice = Number(roomPricing.price);
+        roomPrice = Number(roomPricing.adultPrice);
         
         const adults = selections.numberOfAdults || 1;
-        const children = selections.numberOfChildren || 0;
+        const children6to12 = selections.numberOfChildren6to12 || 0;
+        const children2to6 = selections.numberOfChildren2to6 || 0;
         const infants = selections.numberOfInfants || 0;
         
         hotelPrice =
           roomPrice * adults +
-          (roomPricing.childPrice ? Number(roomPricing.childPrice) * children : 0) +
+          (roomPricing.childPrice6to12 ? Number(roomPricing.childPrice6to12) * children6to12 : 0) +
+          (roomPricing.childPrice2to6 ? Number(roomPricing.childPrice2to6) * children2to6 : 0) +
           (roomPricing.infantPrice ? Number(roomPricing.infantPrice) * infants : 0);
       }
 
       // Calculate addons price
       const totalTravelers =
         (selections.numberOfAdults || 0) +
-        (selections.numberOfChildren || 0) +
+        (selections.numberOfChildren6to12 || 0) +
+        (selections.numberOfChildren2to6 || 0) +
         (selections.numberOfInfants || 0);
       const addonsPrice =
         pkg.addons.reduce(

@@ -20,15 +20,16 @@ interface Review {
   id: string;
   rating: number;
   title: string | null;
+  comment: string | null;
   isApproved: boolean;
-  createdAt: Date;
+  createdAt: Date | string;
   user: {
     name: string | null;
     email: string;
   };
-  tour: {
-    title: string;
-  } | null;
+  entityType: "tour" | "hotel" | "package";
+  entityName: string;
+  entityId: string;
 }
 
 interface ReviewsListProps {
@@ -40,10 +41,10 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
   const { toast } = useToast();
   const [processing, setProcessing] = useState<string | null>(null);
 
-  const handleApprove = async (reviewId: string) => {
+  const handleApprove = async (reviewId: string, entityType: "tour" | "hotel" | "package") => {
     setProcessing(reviewId);
     try {
-      const response = await fetch(`/api/reviews/${reviewId}`, {
+      const response = await fetch(`/api/admin/reviews/${reviewId}?type=${entityType}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isApproved: true }),
@@ -51,13 +52,13 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || "Failed to approve review");
+        throw new Error(error.error || error.message || "Failed to approve review");
       }
 
       toast({
         title: "Review approved!",
         description: "The review has been published.",
-        variant: "success",
+        variant: "default",
       });
       router.refresh();
     } catch (error: any) {
@@ -72,16 +73,16 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
     }
   };
 
-  const handleReject = async (reviewId: string) => {
+  const handleReject = async (reviewId: string, entityType: "tour" | "hotel" | "package") => {
     setProcessing(reviewId);
     try {
-      const response = await fetch(`/api/reviews/${reviewId}`, {
+      const response = await fetch(`/api/admin/reviews/${reviewId}?type=${entityType}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.message || "Failed to reject review");
+        throw new Error(error.error || error.message || "Failed to reject review");
       }
 
       toast({
@@ -108,7 +109,8 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
         <TableHeader>
           <TableRow>
             <TableHead>User</TableHead>
-            <TableHead>Tour</TableHead>
+            <TableHead>Entity</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Rating</TableHead>
             <TableHead>Title</TableHead>
             <TableHead>Status</TableHead>
@@ -119,7 +121,7 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
         <TableBody>
           {reviews.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+              <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                 No reviews found
               </TableCell>
             </TableRow>
@@ -127,7 +129,14 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
             reviews.map((review) => (
               <TableRow key={review.id}>
                 <TableCell>{review.user.name || review.user.email}</TableCell>
-                <TableCell>{review.tour?.title || "N/A"}</TableCell>
+                <TableCell className="max-w-xs truncate">
+                  {review.entityName}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="capitalize">
+                    {review.entityType}
+                  </Badge>
+                </TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     {[...Array(5)].map((_, i) => (
@@ -159,7 +168,7 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleApprove(review.id)}
+                        onClick={() => handleApprove(review.id, review.entityType)}
                         disabled={processing === review.id}
                       >
                         <Check className="h-4 w-4 text-green-600" />
@@ -167,7 +176,7 @@ export function ReviewsList({ reviews }: ReviewsListProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleReject(review.id)}
+                        onClick={() => handleReject(review.id, review.entityType)}
                         disabled={processing === review.id}
                       >
                         <X className="h-4 w-4 text-red-600" />

@@ -26,7 +26,7 @@ export function HeroContent() {
         transition={{ delay: 0.2 }}
         className="text-xl md:text-2xl text-white/90 mb-12 text-shadow-md"
       >
-        Discover amazing destinations, book flights, and find hotels all in one place.
+        Discover amazing destinations and book complete travel packages all in one place.
       </motion.p>
 
       {/* Search Widget */}

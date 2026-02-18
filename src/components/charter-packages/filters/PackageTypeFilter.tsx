@@ -13,11 +13,9 @@ interface PackageTypeFilterProps {
 }
 
 const typeLabels: Record<PackageType, string> = {
-  HOTEL_CHARTER: "Hotel Charter",
-  INBOUND: "Inbound",
-  OUTBOUND: "Outbound",
-  DOMESTIC: "Domestic",
-  CUSTOM: "Custom",
+  CHARTER: "Charter Package",
+  INBOUND: "Inbound Package",
+  REGULAR: "Regular Package",
 };
 
 export function PackageTypeFilter({

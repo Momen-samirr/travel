@@ -19,7 +19,7 @@ export class HotelCharterService implements IPackageService {
   async searchPackages(params: PackageSearchParams): Promise<PackageSearchResult> {
     try {
       const where: any = {
-        type: PackageType.HOTEL_CHARTER,
+        type: params.type || PackageType.CHARTER,
         isActive: true,
       };
 
@@ -119,7 +119,7 @@ export class HotelCharterService implements IPackageService {
   async getPackageById(id: string): Promise<TravelPackage | null> {
     try {
       const pkg = await prisma.charterTravelPackage.findUnique({
-        where: { id, type: PackageType.HOTEL_CHARTER },
+        where: { id, type: PackageType.CHARTER },
       });
 
       if (!pkg) {
@@ -136,7 +136,7 @@ export class HotelCharterService implements IPackageService {
   async getPackageBySlug(slug: string): Promise<TravelPackage | null> {
     try {
       const pkg = await prisma.charterTravelPackage.findUnique({
-        where: { slug, type: PackageType.HOTEL_CHARTER },
+        where: { slug, type: PackageType.CHARTER },
       });
 
       if (!pkg) {
@@ -211,22 +211,25 @@ export class HotelCharterService implements IPackageService {
       let roomPrice = 0;
       if (pkg.hotelOptions[0]?.hotelPricings[0]?.roomTypePricings[0]) {
         const roomPricing = pkg.hotelOptions[0].hotelPricings[0].roomTypePricings[0];
-        roomPrice = Number(roomPricing.price);
+        roomPrice = Number(roomPricing.adultPrice);
         
         const adults = selections.numberOfAdults || 1;
-        const children = selections.numberOfChildren || 0;
+        const children6to12 = selections.numberOfChildren6to12 || 0;
+        const children2to6 = selections.numberOfChildren2to6 || 0;
         const infants = selections.numberOfInfants || 0;
         
         hotelPrice =
           roomPrice * adults +
-          (roomPricing.childPrice ? Number(roomPricing.childPrice) * children : 0) +
+          (roomPricing.childPrice6to12 ? Number(roomPricing.childPrice6to12) * children6to12 : 0) +
+          (roomPricing.childPrice2to6 ? Number(roomPricing.childPrice2to6) * children2to6 : 0) +
           (roomPricing.infantPrice ? Number(roomPricing.infantPrice) * infants : 0);
       }
 
       // Calculate addons price
       const totalTravelers =
         (selections.numberOfAdults || 0) +
-        (selections.numberOfChildren || 0) +
+        (selections.numberOfChildren6to12 || 0) +
+        (selections.numberOfChildren2to6 || 0) +
         (selections.numberOfInfants || 0);
       const addonsPrice =
         pkg.addons.reduce(
@@ -286,7 +289,7 @@ export class HotelCharterService implements IPackageService {
 
     // Check if package exists and is active
     const pkg = await prisma.charterTravelPackage.findUnique({
-      where: { id: packageId, type: PackageType.HOTEL_CHARTER },
+      where: { id: packageId, type: PackageType.CHARTER },
     });
 
     if (!pkg) {

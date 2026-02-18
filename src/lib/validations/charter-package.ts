@@ -2,7 +2,7 @@ import { z } from "zod";
 import { PackageType } from "@/services/packages/types";
 
 export const charterPackageSchema = z.object({
-  type: z.nativeEnum(PackageType).default(PackageType.HOTEL_CHARTER),
+  type: z.nativeEnum(PackageType).default(PackageType.CHARTER),
   name: z.string().min(1, "Name is required").max(200),
   slug: z.string().min(1, "Slug is required"),
   description: z.string().min(1, "Description is required"),
@@ -39,8 +39,9 @@ export type CharterPackageHotelOptionInput = z.infer<typeof charterPackageHotelO
 
 export const roomTypePricingSchema = z.object({
   roomType: z.enum(["SINGLE", "DOUBLE", "TRIPLE", "QUAD"]),
-  price: z.number().positive("Price must be positive"),
-  childPrice: z.number().positive().optional().nullable(),
+  adultPrice: z.number().positive("Adult price must be positive"),
+  childPrice6to12: z.number().positive().optional().nullable(),
+  childPrice2to6: z.number().positive().optional().nullable(),
   infantPrice: z.number().positive().optional().nullable(),
   currency: z.string().default("EGP"),
 });

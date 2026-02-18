@@ -25,9 +25,9 @@ export class UnifiedPackageService {
 
     // Search across all types
     const allTypes = [
-      PackageType.HOTEL_CHARTER,
+      PackageType.CHARTER,
       PackageType.INBOUND,
-      // Add more types as they're implemented
+      PackageType.REGULAR,
     ];
 
     const results = await Promise.all(
@@ -71,9 +71,9 @@ export class UnifiedPackageService {
   async getPackageById(id: string): Promise<TravelPackage | null> {
     // Try all types until found
     const types = [
-      PackageType.HOTEL_CHARTER,
+      PackageType.CHARTER,
       PackageType.INBOUND,
-      // Add more types as needed
+      PackageType.REGULAR,
     ];
 
     for (const type of types) {
@@ -93,9 +93,9 @@ export class UnifiedPackageService {
   async getPackageBySlug(slug: string): Promise<TravelPackage | null> {
     // Try all types until found
     const types = [
-      PackageType.HOTEL_CHARTER,
+      PackageType.CHARTER,
       PackageType.INBOUND,
-      // Add more types as needed
+      PackageType.REGULAR,
     ];
 
     for (const type of types) {

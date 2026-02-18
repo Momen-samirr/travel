@@ -14,10 +14,13 @@ export function BookingFormFactory({
   packageData,
 }: BookingFormFactoryProps) {
   switch (pkg.type) {
-    case PackageType.HOTEL_CHARTER:
+    case PackageType.CHARTER:
       return <CharterBookingForm packageData={packageData} />;
     case PackageType.INBOUND:
       return <InboundBookingForm packageData={packageData} />;
+    case PackageType.REGULAR:
+      // Regular packages use charter form for now
+      return <CharterBookingForm packageData={packageData} />;
     default:
       // Fallback to charter form for backward compatibility
       return <CharterBookingForm packageData={packageData} />;

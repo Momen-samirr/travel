@@ -10,6 +10,9 @@ import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { DynamicBookingForm } from "@/components/charter-packages/dynamic-booking-form";
 import { HotelMap } from "@/components/charter-packages/hotel-map";
+import { PackageType } from "@/services/packages/types";
+import { PackageReviewsList } from "@/components/packages/package-reviews-list";
+import { PackageReviewForm } from "@/components/packages/package-review-form";
 
 export async function generateMetadata({
   params,
@@ -18,7 +21,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const pkg = await prisma.charterTravelPackage.findUnique({
-    where: { slug },
+    where: { slug, type: PackageType.CHARTER },
   });
 
   if (!pkg) {
@@ -42,7 +45,7 @@ export default async function CharterPackageDetailPage({
   
   // Try to find package by slug (exact match first)
   let pkg = await prisma.charterTravelPackage.findUnique({
-    where: { slug },
+    where: { slug, type: PackageType.CHARTER },
     include: {
       departureOptions: {
         where: { isActive: true },
@@ -78,6 +81,7 @@ export default async function CharterPackageDetailPage({
     pkg = await prisma.charterTravelPackage.findFirst({
       where: { 
         slug: normalizedSlug,
+        type: PackageType.CHARTER,
         isActive: true,
       },
       include: {
@@ -385,56 +389,8 @@ export default async function CharterPackageDetailPage({
             </Card>
           )}
 
-          {pkg.reviews.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Reviews</CardTitle>
-                  {avgRating > 0 && (
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold">
-                        {avgRating.toFixed(1)}
-                      </span>
-                      <span className="text-yellow-400">★</span>
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {pkg.reviews.map((review) => (
-                    <div key={review.id} className="border-b pb-4 last:border-0">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="font-semibold">
-                          {review.user.name || "Anonymous"}
-                        </div>
-                        <div className="flex gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <span
-                              key={i}
-                              className={
-                                i < review.rating ? "text-yellow-400" : "text-gray-300"
-                              }
-                            >
-                              ★
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      {review.title && (
-                        <div className="font-medium mb-1">{review.title}</div>
-                      )}
-                      {review.comment && (
-                        <div className="text-sm text-muted-foreground">
-                          {review.comment}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <PackageReviewsList reviews={pkg.reviews} averageRating={avgRating} />
+          <PackageReviewForm packageId={pkg.id} />
         </div>
 
         <div className="space-y-6">

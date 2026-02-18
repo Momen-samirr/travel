@@ -211,12 +211,13 @@ export default async function BookingDetailPage({
                     )}
                   </div>
                 )}
-                {(booking.numberOfAdults || booking.numberOfChildren || booking.numberOfInfants) && (
+                {(booking.numberOfAdults || booking.numberOfChildren6to12 || booking.numberOfChildren2to6 || booking.numberOfInfants) && (
                   <div>
                     <div className="text-sm text-gray-600 mb-1">Travelers</div>
                     <div>
                       {booking.numberOfAdults && `${booking.numberOfAdults} Adult${booking.numberOfAdults > 1 ? "s" : ""}`}
-                      {booking.numberOfChildren && ` • ${booking.numberOfChildren} Child${booking.numberOfChildren > 1 ? "ren" : ""}`}
+                      {booking.numberOfChildren6to12 && ` • ${booking.numberOfChildren6to12} Child${booking.numberOfChildren6to12 > 1 ? "ren" : ""} (6-12 years)`}
+                      {booking.numberOfChildren2to6 && ` • ${booking.numberOfChildren2to6} Child${booking.numberOfChildren2to6 > 1 ? "ren" : ""} (2-6 years)`}
                       {booking.numberOfInfants && ` • ${booking.numberOfInfants} Infant${booking.numberOfInfants > 1 ? "s" : ""}`}
                     </div>
                   </div>

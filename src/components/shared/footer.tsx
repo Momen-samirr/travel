@@ -62,18 +62,18 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/tours" className="text-muted-foreground hover:text-primary transition-colors">
-                  Tours
+                <Link href="/charter-packages" className="text-muted-foreground hover:text-primary transition-colors">
+                  Charter Packages
                 </Link>
               </li>
               <li>
-                <Link href="/hotels" className="text-muted-foreground hover:text-primary transition-colors">
-                  Hotels
+                <Link href="/inbound-packages" className="text-muted-foreground hover:text-primary transition-colors">
+                  Inbound Packages
                 </Link>
               </li>
               <li>
-                <Link href="/visa" className="text-muted-foreground hover:text-primary transition-colors">
-                  Visa Services
+                <Link href="/regular-packages" className="text-muted-foreground hover:text-primary transition-colors">
+                  Regular Packages
                 </Link>
               </li>
             </ul>

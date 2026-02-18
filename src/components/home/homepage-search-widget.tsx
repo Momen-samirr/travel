@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plane, MapPin, Hotel, Search } from "lucide-react";
-import Link from "next/link";
+import { Plane, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function HomepageSearchWidget() {
@@ -26,18 +25,14 @@ export function HomepageSearchWidget() {
       <Card className="w-full max-w-4xl mx-auto shadow-2xl border-0 bg-white/95 backdrop-blur-md">
         <CardContent className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="flights" className="flex items-center gap-2">
               <Plane className="h-4 w-4" />
               <span className="hidden sm:inline">Flights</span>
             </TabsTrigger>
             <TabsTrigger value="packages" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+              <Package className="h-4 w-4" />
               <span className="hidden sm:inline">Packages</span>
-            </TabsTrigger>
-            <TabsTrigger value="hotels" className="flex items-center gap-2">
-              <Hotel className="h-4 w-4" />
-              <span className="hidden sm:inline">Hotels</span>
             </TabsTrigger>
           </TabsList>
 
@@ -58,25 +53,30 @@ export function HomepageSearchWidget() {
             {activeTab === "packages" && (
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  onClick={() => handleQuickSearch("packages")}
+                  onClick={() => handleQuickSearch("charter-packages")}
                   size="lg"
                   className="flex-1 h-14 text-base rounded-xl"
                 >
                   <Search className="mr-2 h-5 w-5" />
-                  Browse Packages
+                  Browse Charter Packages
                 </Button>
-              </div>
-            )}
-
-            {activeTab === "hotels" && (
-              <div className="flex flex-col sm:flex-row gap-3">
                 <Button
-                  onClick={() => handleQuickSearch("hotels")}
+                  onClick={() => handleQuickSearch("inbound-packages")}
                   size="lg"
+                  variant="outline"
                   className="flex-1 h-14 text-base rounded-xl"
                 >
                   <Search className="mr-2 h-5 w-5" />
-                  Find Hotels
+                  Browse Inbound Packages
+                </Button>
+                <Button
+                  onClick={() => handleQuickSearch("regular-packages")}
+                  size="lg"
+                  variant="outline"
+                  className="flex-1 h-14 text-base rounded-xl"
+                >
+                  <Search className="mr-2 h-5 w-5" />
+                  Browse Regular Packages
                 </Button>
               </div>
             )}
@@ -88,4 +88,5 @@ export function HomepageSearchWidget() {
     </motion.div>
   );
 }
+
 

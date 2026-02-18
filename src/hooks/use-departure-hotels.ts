@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 
 interface RoomTypePricing {
   roomType: "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD";
-  price: number;
-  childPrice: number | null;
+  adultPrice: number;
+  childPrice6to12: number | null;
+  childPrice2to6: number | null;
   infantPrice: number | null;
   currency: string;
 }

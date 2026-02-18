@@ -10,7 +10,8 @@ interface PriceBreakdownProps {
   basePrice: number;
   departureModifier: number;
   hotelRoomCost: number;
-  childrenCost: number;
+  children6to12Cost: number;
+  children2to6Cost: number;
   infantsCost: number;
   addonsCost: number;
   subtotal: number;
@@ -19,7 +20,8 @@ interface PriceBreakdownProps {
   totalPerPerson: number;
   currency: string;
   numberOfAdults: number;
-  numberOfChildren: number;
+  numberOfChildren6to12: number;
+  numberOfChildren2to6: number;
   numberOfInfants: number;
   selectedAddons?: Array<{ id: string; name: string; price: number }>;
 }
@@ -28,7 +30,8 @@ export function PriceBreakdown({
   basePrice,
   departureModifier,
   hotelRoomCost,
-  childrenCost,
+  children6to12Cost,
+  children2to6Cost,
   infantsCost,
   addonsCost,
   subtotal,
@@ -37,12 +40,13 @@ export function PriceBreakdown({
   totalPerPerson,
   currency,
   numberOfAdults,
-  numberOfChildren,
+  numberOfChildren6to12,
+  numberOfChildren2to6,
   numberOfInfants,
   selectedAddons = [],
 }: PriceBreakdownProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const totalTravelers = numberOfAdults + numberOfChildren + numberOfInfants;
+  const totalTravelers = numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants;
 
   return (
     <Card>
@@ -101,19 +105,28 @@ export function PriceBreakdown({
               </div>
             )}
 
-            {childrenCost > 0 && (
+            {children6to12Cost > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
-                  Children ({numberOfChildren})
+                  Children (6-12 Years) ({numberOfChildren6to12})
                 </span>
-                <span>{formatCurrency(childrenCost, currency)}</span>
+                <span>{formatCurrency(children6to12Cost, currency)}</span>
+              </div>
+            )}
+
+            {children2to6Cost > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Children (2-6 Years) ({numberOfChildren2to6})
+                </span>
+                <span>{formatCurrency(children2to6Cost, currency)}</span>
               </div>
             )}
 
             {infantsCost > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">
-                  Infants ({numberOfInfants})
+                  Infants (0-2 Years) ({numberOfInfants})
                 </span>
                 <span>{formatCurrency(infantsCost, currency)}</span>
               </div>

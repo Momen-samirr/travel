@@ -62,11 +62,9 @@ enum RoomType {
 }
 
 enum PackageType {
-  HOTEL_CHARTER
+  CHARTER
   INBOUND
-  OUTBOUND
-  DOMESTIC
-  CUSTOM
+  REGULAR
 }
 
 model User {
@@ -221,7 +219,8 @@ model Booking {
   charterDepartureOptionId String?
   roomType                 String?
   numberOfAdults           Int?
-  numberOfChildren         Int?
+  numberOfChildren6to12    Int?
+  numberOfChildren2to6     Int?
   numberOfInfants          Int?
   selectedAddonIds         Json?
   createdAt                DateTime       @default(now())
@@ -356,7 +355,7 @@ model ActivityLog {
 
 model CharterTravelPackage {
   id                 String      @id @default(cuid())
-  type               PackageType @default(HOTEL_CHARTER)
+  type               PackageType @default(CHARTER)
   name               String
   slug               String      @unique
   description        String      @db.Text
@@ -500,8 +499,9 @@ model RoomTypePricing {
   id                      String   @id @default(cuid())
   departureHotelPricingId String
   roomType                RoomType
-  price                   Decimal  @db.Decimal(10, 2)
-  childPrice              Decimal? @db.Decimal(10, 2)
+  adultPrice              Decimal  @db.Decimal(10, 2)
+  childPrice6to12         Decimal? @db.Decimal(10, 2)
+  childPrice2to6          Decimal? @db.Decimal(10, 2)
   infantPrice             Decimal? @db.Decimal(10, 2)
   currency                String   @default("EGP")
   createdAt               DateTime @default(now())
@@ -511,4 +511,29 @@ model RoomTypePricing {
 
   @@unique([departureHotelPricingId, roomType])
   @@index([departureHotelPricingId])
+}
+
+model Branch {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Cairo Main Office", "Alexandria Branch"
+  slug        String   @unique // URL-friendly identifier
+  address     String   @db.Text // Full address
+  city        String
+  country     String
+  latitude    Float?
+  longitude   Float?
+  placeId     String?  // Google Places ID
+  phone       String   // Primary phone number
+  phoneAlt    String?  // Alternative phone number
+  email       String   // Primary email
+  emailAlt    String?  // Alternative email
+  workingHours Json    // { monday: "9:00 AM - 5:00 PM", tuesday: "9:00 AM - 5:00 PM", ... }
+  isActive    Boolean  @default(true)
+  displayOrder Int     @default(0) // For ordering branches
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([displayOrder])
+  @@index([slug])
 }

@@ -44,9 +44,12 @@ export const bookingSchema = z.object({
   charterDepartureOptionId: z.string().optional().nullable(),
   roomType: z.enum(["SINGLE", "DOUBLE", "TRIPLE", "QUAD"]).optional().nullable(),
   numberOfAdults: z.number().int().positive().optional(),
-  numberOfChildren: z.number().int().min(0).optional(),
+  numberOfChildren6to12: z.number().int().min(0).optional(),
+  numberOfChildren2to6: z.number().int().min(0).optional(),
   numberOfInfants: z.number().int().min(0).optional(),
   selectedAddonIds: z.array(z.string()).optional(),
+  // Legacy field for backward compatibility
+  numberOfChildren: z.number().int().min(0).optional(),
 });
 
 export type BookingInput = z.infer<typeof bookingSchema>;

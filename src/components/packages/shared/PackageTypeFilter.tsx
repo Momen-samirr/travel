@@ -19,13 +19,13 @@ export function PackageTypeFilter({
       onValueChange={(value) => onTypeChange(value as PackageType | "ALL")}
       className="w-full"
     >
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="ALL" className="flex items-center gap-2">
           <Package className="h-4 w-4" />
           <span>All Packages</span>
         </TabsTrigger>
         <TabsTrigger
-          value={PackageType.HOTEL_CHARTER}
+          value={PackageType.CHARTER}
           className="flex items-center gap-2"
         >
           <Plane className="h-4 w-4" />
@@ -37,6 +37,13 @@ export function PackageTypeFilter({
         >
           <MapPin className="h-4 w-4" />
           <span>Inbound</span>
+        </TabsTrigger>
+        <TabsTrigger
+          value={PackageType.REGULAR}
+          className="flex items-center gap-2"
+        >
+          <Package className="h-4 w-4" />
+          <span>Regular</span>
         </TabsTrigger>
       </TabsList>
     </Tabs>

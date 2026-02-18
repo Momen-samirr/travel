@@ -16,8 +16,9 @@ import { useToast } from "@/hooks/use-toast";
 
 interface DeleteButtonProps {
   id: string;
-  entityType: "tour" | "flight" | "hotel" | "visa" | "blog" | "charter-package";
+  entityType: "tour" | "flight" | "hotel" | "visa" | "blog" | "charter-package" | "branch";
   entityName: string;
+  apiPath?: string;
   onSuccess?: () => void;
 }
 
@@ -25,6 +26,7 @@ export function DeleteButton({
   id,
   entityType,
   entityName,
+  apiPath,
   onSuccess,
 }: DeleteButtonProps) {
   const router = useRouter();
@@ -35,11 +37,13 @@ export function DeleteButton({
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      // Map entityType to API endpoint
-      const apiPath = entityType === "charter-package" 
+      // Use provided apiPath or map entityType to API endpoint
+      const endpoint = apiPath || (entityType === "charter-package" 
         ? "charter-packages" 
-        : `${entityType}s`;
-      const response = await fetch(`/api/${apiPath}/${id}`, {
+        : entityType === "branch"
+        ? "admin/branches"
+        : `${entityType}s`);
+      const response = await fetch(`/api/${endpoint}/${id}`, {
         method: "DELETE",
       });
 

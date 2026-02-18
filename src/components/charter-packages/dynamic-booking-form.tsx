@@ -82,7 +82,8 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   const [roomType, setRoomType] = useState<"SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD" | null>(null);
   const [departureOptionId, setDepartureOptionId] = useState<string | null>(null);
   const [numberOfAdults, setNumberOfAdults] = useState(1);
-  const [numberOfChildren, setNumberOfChildren] = useState(0);
+  const [numberOfChildren6to12, setNumberOfChildren6to12] = useState(0);
+  const [numberOfChildren2to6, setNumberOfChildren2to6] = useState(0);
   const [numberOfInfants, setNumberOfInfants] = useState(0);
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -147,7 +148,8 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
       departureOptionId,
       roomType,
       numberOfAdults,
-      numberOfChildren,
+      numberOfChildren6to12,
+      numberOfChildren2to6,
       numberOfInfants,
       selectedAddonIds,
     }
@@ -217,10 +219,11 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
           charterDepartureOptionId: departureOptionId,
           roomType,
           numberOfAdults,
-          numberOfChildren,
+          numberOfChildren6to12,
+          numberOfChildren2to6,
           numberOfInfants,
           selectedAddonIds,
-          numberOfGuests: numberOfAdults + numberOfChildren + numberOfInfants,
+          numberOfGuests: numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants,
           guestDetails: {
             firstName: user.firstName || "",
             lastName: user.lastName || "",
@@ -466,7 +469,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                         <Label htmlFor={rtp.roomType.toLowerCase()} className="flex-1 cursor-pointer">
                           <div className="font-semibold">{roomTypeLabels[rtp.roomType] || rtp.roomType}</div>
                           <div className="text-sm text-muted-foreground">
-                            {formatCurrency(Number(rtp.price), rtp.currency || packageData.currency)}
+                            {formatCurrency(Number(rtp.adultPrice), rtp.currency || packageData.currency)}
                           </div>
                         </Label>
                       </div>
@@ -499,21 +502,35 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="children">Children</Label>
+            <Label htmlFor="children6to12">Children (6-12 Years)</Label>
             <Input
-              id="children"
+              id="children6to12"
               type="number"
               min="0"
-              value={numberOfChildren}
+              value={numberOfChildren6to12}
               onChange={(e) =>
-                setNumberOfChildren(
+                setNumberOfChildren6to12(
                   Math.max(0, parseInt(e.target.value) || 0)
                 )
               }
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="infants">Infants</Label>
+            <Label htmlFor="children2to6">Children (2-6 Years)</Label>
+            <Input
+              id="children2to6"
+              type="number"
+              min="0"
+              value={numberOfChildren2to6}
+              onChange={(e) =>
+                setNumberOfChildren2to6(
+                  Math.max(0, parseInt(e.target.value) || 0)
+                )
+              }
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="infants">Infants (0-2 Years)</Label>
             <Input
               id="infants"
               type="number"
@@ -581,7 +598,8 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
       <PriceBreakdown
         {...pricing}
         numberOfAdults={numberOfAdults}
-        numberOfChildren={numberOfChildren}
+        numberOfChildren6to12={numberOfChildren6to12}
+        numberOfChildren2to6={numberOfChildren2to6}
         numberOfInfants={numberOfInfants}
         selectedAddons={selectedAddons.map((addon) => ({
           id: addon.id,

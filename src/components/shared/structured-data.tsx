@@ -1,8 +1,21 @@
 import { Tour, Blog } from "@prisma/client";
 
+interface Branch {
+  id: string;
+  name: string;
+  slug: string;
+  address: string;
+  city: string;
+  country: string;
+  latitude: number | null;
+  longitude: number | null;
+  phone: string;
+  email: string;
+}
+
 interface StructuredDataProps {
-  type: "organization" | "tour" | "blog";
-  data?: Tour | Blog | null;
+  type: "organization" | "tour" | "blog" | "branches";
+  data?: Tour | Blog | Branch[] | null;
 }
 
 export function StructuredData({ type, data }: StructuredDataProps) {
@@ -26,6 +39,32 @@ export function StructuredData({ type, data }: StructuredDataProps) {
             // Add social media links
           ],
         };
+
+      case "branches":
+        if (!data || !Array.isArray(data)) return null;
+        const branches = data as Branch[];
+        return branches.map((branch) => ({
+          "@context": "https://schema.org",
+          "@type": "LocalBusiness",
+          name: branch.name,
+          address: {
+            "@type": "PostalAddress",
+            streetAddress: branch.address.split("\n")[0],
+            addressLocality: branch.city,
+            addressCountry: branch.country,
+          },
+          telephone: branch.phone,
+          email: branch.email,
+          ...(branch.latitude && branch.longitude
+            ? {
+                geo: {
+                  "@type": "GeoCoordinates",
+                  latitude: branch.latitude,
+                  longitude: branch.longitude,
+                },
+              }
+            : {}),
+        }));
 
       case "tour":
         if (!data || !("title" in data)) return null;
@@ -77,6 +116,22 @@ export function StructuredData({ type, data }: StructuredDataProps) {
   const structuredData = getStructuredData();
 
   if (!structuredData) return null;
+
+  // Handle array of structured data (branches)
+  if (Array.isArray(structuredData)) {
+    return (
+      <>
+        {structuredData.map((item, index) => (
+          <script
+            key={index}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
+            suppressHydrationWarning
+          />
+        ))}
+      </>
+    );
+  }
 
   return (
     <script

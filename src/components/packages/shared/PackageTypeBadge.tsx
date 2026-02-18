@@ -10,35 +10,25 @@ interface PackageTypeBadgeProps {
 }
 
 const typeConfig = {
-  [PackageType.HOTEL_CHARTER]: {
-    label: "Charter",
+  [PackageType.CHARTER]: {
+    label: "Charter Package",
     icon: Plane,
     className: "bg-blue-500/90 text-white",
   },
   [PackageType.INBOUND]: {
-    label: "Inbound",
+    label: "Inbound Package",
     icon: MapPin,
     className: "bg-green-500/90 text-white",
   },
-  [PackageType.OUTBOUND]: {
-    label: "Outbound",
+  [PackageType.REGULAR]: {
+    label: "Regular Package",
     icon: Globe,
     className: "bg-purple-500/90 text-white",
-  },
-  [PackageType.DOMESTIC]: {
-    label: "Domestic",
-    icon: Home,
-    className: "bg-orange-500/90 text-white",
-  },
-  [PackageType.CUSTOM]: {
-    label: "Custom",
-    icon: Settings,
-    className: "bg-gray-500/90 text-white",
   },
 };
 
 export function PackageTypeBadge({ type, className }: PackageTypeBadgeProps) {
-  const config = typeConfig[type] || typeConfig[PackageType.CUSTOM];
+  const config = typeConfig[type] || typeConfig[PackageType.REGULAR];
   const Icon = config.icon;
 
   return (

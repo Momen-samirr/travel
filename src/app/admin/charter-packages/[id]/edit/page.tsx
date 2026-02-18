@@ -54,8 +54,9 @@ export default async function EditCharterPackagePage({
               currency: hp.currency,
               roomTypePricings: hp.roomTypePricings.map((rtp) => ({
                 roomType: rtp.roomType as "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD",
-                price: Number(rtp.price),
-                childPrice: rtp.childPrice ? Number(rtp.childPrice) : null,
+                adultPrice: Number(rtp.adultPrice),
+                childPrice6to12: rtp.childPrice6to12 ? Number(rtp.childPrice6to12) : null,
+                childPrice2to6: rtp.childPrice2to6 ? Number(rtp.childPrice2to6) : null,
                 infantPrice: rtp.infantPrice ? Number(rtp.infantPrice) : null,
                 currency: rtp.currency,
               })),

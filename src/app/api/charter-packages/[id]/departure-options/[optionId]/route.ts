@@ -117,8 +117,9 @@ export async function PUT(
               data: hotelPricing.roomTypePricings.map((rtp: any) => ({
                 departureHotelPricingId: departureHotelPricing.id,
                 roomType: rtp.roomType,
-                price: rtp.price,
-                childPrice: rtp.childPrice || null,
+                adultPrice: rtp.adultPrice,
+                childPrice6to12: rtp.childPrice6to12 || null,
+                childPrice2to6: rtp.childPrice2to6 || null,
                 infantPrice: rtp.infantPrice || null,
                 currency: rtp.currency || hotelPricing.currency || "EGP",
               })),

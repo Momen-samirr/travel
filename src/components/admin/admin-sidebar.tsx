@@ -17,6 +17,7 @@ import {
   ShoppingCart,
   Activity,
   Package,
+  Building2,
 } from "lucide-react";
 
 const menuItems = [
@@ -32,6 +33,7 @@ const menuItems = [
   { href: "/admin/blogs", label: "Blogs", icon: BookOpen },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
   { href: "/admin/complaints", label: "Complaints", icon: AlertCircle },
+  { href: "/admin/branches", label: "Branches", icon: Building2 },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 

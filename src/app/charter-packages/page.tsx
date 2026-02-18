@@ -37,7 +37,7 @@ export default async function CharterPackagesPage({
   const limit = Number(filters.limit) || 12;
 
   // Build where clause (same logic as API)
-  const where: any = { isActive: true };
+  const where: any = { isActive: true, type: PackageType.CHARTER };
 
   if (filters.destinationCountry) {
     where.destinationCountry = filters.destinationCountry;

@@ -84,8 +84,9 @@ export function CharterPackageForm({
         currency: string;
         roomTypePricings: Array<{
           roomType: "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD";
-          price: number;
-          childPrice?: number | null;
+          adultPrice: number;
+          childPrice6to12?: number | null;
+          childPrice2to6?: number | null;
           infantPrice?: number | null;
           currency: string;
         }>;
@@ -115,7 +116,7 @@ export function CharterPackageForm({
   const form = useForm<CharterPackageInput>({
     resolver: zodResolver(charterPackageSchema) as any,
     defaultValues: {
-      type: (initialData?.type as PackageType) || PackageType.HOTEL_CHARTER,
+      type: (initialData?.type as PackageType) || PackageType.CHARTER,
       name: initialData?.name || "",
       slug: initialData?.slug || "",
       description: initialData?.description || "",
@@ -389,8 +390,9 @@ export function CharterPackageForm({
           currency: string;
           roomTypePricings: Array<{
             roomType: "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD";
-            price: number;
-            childPrice?: number | null;
+            adultPrice: number;
+            childPrice6to12?: number | null;
+            childPrice2to6?: number | null;
             infantPrice?: number | null;
             currency: string;
           }>;
@@ -520,7 +522,7 @@ export function CharterPackageForm({
                     <FormLabel>Package Type *</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value || PackageType.HOTEL_CHARTER}
+                      defaultValue={field.value || PackageType.CHARTER}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -528,20 +530,14 @@ export function CharterPackageForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value={PackageType.HOTEL_CHARTER}>
-                          Hotel Charter (with flights)
+                        <SelectItem value={PackageType.CHARTER}>
+                          Charter Package (with flights)
                         </SelectItem>
                         <SelectItem value={PackageType.INBOUND}>
-                          Inbound (no international flights)
+                          Inbound Package (no international flights)
                         </SelectItem>
-                        <SelectItem value={PackageType.OUTBOUND}>
-                          Outbound
-                        </SelectItem>
-                        <SelectItem value={PackageType.DOMESTIC}>
-                          Domestic
-                        </SelectItem>
-                        <SelectItem value={PackageType.CUSTOM}>
-                          Custom
+                        <SelectItem value={PackageType.REGULAR}>
+                          Regular Package
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1080,8 +1076,8 @@ export function CharterPackageForm({
                               hotelOptionId: hotelOptIdentifier,
                               currency: "EGP",
                               roomTypePricings: [
-                                { roomType: "SINGLE" as const, price: 0, currency: "EGP" },
-                                { roomType: "DOUBLE" as const, price: 0, currency: "EGP" },
+                                { roomType: "SINGLE" as const, adultPrice: 0, childPrice6to12: null, childPrice2to6: null, infantPrice: null, currency: "EGP" },
+                                { roomType: "DOUBLE" as const, adultPrice: 0, childPrice6to12: null, childPrice2to6: null, infantPrice: null, currency: "EGP" },
                               ],
                             };
                             updateDepartureOption(index, "hotelPricings", [...currentPricings, newPricing]);
@@ -1116,7 +1112,10 @@ export function CharterPackageForm({
                               if (hp.hotelOptionId === hotelOptIdentifier) {
                                 const newRoomType = {
                                   roomType,
-                                  price: 0,
+                                  adultPrice: 0,
+                                  childPrice6to12: null,
+                                  childPrice2to6: null,
+                                  infantPrice: null,
                                   currency: hp.currency || "EGP",
                                 };
                                 return { ...hp, roomTypePricings: [...hp.roomTypePricings, newRoomType] };
@@ -1167,31 +1166,42 @@ export function CharterPackageForm({
                                   {hotelPricing.roomTypePricings.map((rtp, rtpIndex) => (
                                     <div key={rtpIndex} className="border rounded p-3 space-y-2">
                                       <div className="font-semibold text-sm">{rtp.roomType} Room</div>
-                                      <div className="grid grid-cols-3 gap-2">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                                         <div>
-                                          <label className="text-xs">Price</label>
+                                          <label className="text-xs">Adult Price</label>
                                           <Input
                                             type="number"
                                             step="0.01"
-                                            value={rtp.price}
+                                            value={rtp.adultPrice}
                                             onChange={(e) =>
-                                              updateRoomTypePricing(rtp.roomType, "price", parseFloat(e.target.value) || 0)
+                                              updateRoomTypePricing(rtp.roomType, "adultPrice", parseFloat(e.target.value) || 0)
                                             }
                                           />
                                         </div>
                                         <div>
-                                          <label className="text-xs">Child Price</label>
+                                          <label className="text-xs">Child Price (6-12 Years)</label>
                                           <Input
                                             type="number"
                                             step="0.01"
-                                            value={rtp.childPrice || ""}
+                                            value={rtp.childPrice6to12 || ""}
                                             onChange={(e) =>
-                                              updateRoomTypePricing(rtp.roomType, "childPrice", e.target.value ? parseFloat(e.target.value) : null)
+                                              updateRoomTypePricing(rtp.roomType, "childPrice6to12", e.target.value ? parseFloat(e.target.value) : null)
                                             }
                                           />
                                         </div>
                                         <div>
-                                          <label className="text-xs">Infant Price</label>
+                                          <label className="text-xs">Child Price (2-6 Years)</label>
+                                          <Input
+                                            type="number"
+                                            step="0.01"
+                                            value={rtp.childPrice2to6 || ""}
+                                            onChange={(e) =>
+                                              updateRoomTypePricing(rtp.roomType, "childPrice2to6", e.target.value ? parseFloat(e.target.value) : null)
+                                            }
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-xs">Infant Price (0-2 Years)</label>
                                           <Input
                                             type="number"
                                             step="0.01"
