@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyPaymobWebhook } from "@/lib/paymob";
-import { sendBookingConfirmationEmail, sendAdminPaymentNotification } from "@/lib/email";
+import { sendBookingConfirmationEmail, sendAdminPaymentNotification, sendPaymentFailureEmail, sendAdminPaymentFailureNotification, sendAdminAmadeusOrderFailureNotification } from "@/lib/email";
 import { logActivity, ActivityActions } from "@/lib/activity-log";
+import { ensureWebhookIdempotency, createAmadeusOrderForBooking } from "@/lib/post-payment-flight-order";
 
 export async function POST(request: NextRequest) {
   const webhookReceivedAt = new Date();
@@ -79,6 +80,13 @@ export async function POST(request: NextRequest) {
 
     bookingId = booking.id;
 
+    const eventId = `paymob:${order.id}:${transaction.id ?? order.id}`;
+    const idem = await ensureWebhookIdempotency("PAYMOB", eventId, booking.id);
+    if (idem === "duplicate") {
+      console.log("[Paymob Webhook] Already processed (idempotency):", eventId);
+      return NextResponse.json({ success: true, message: "Already processed" });
+    }
+
     // Update booking based on transaction status
     if (transaction.success === true) {
       // Log activity before updating
@@ -110,23 +118,56 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Send confirmation email (don't let failures break webhook)
-      try {
-        await sendBookingConfirmationEmail(updatedBooking);
-      } catch (emailError) {
-        console.error("Failed to send confirmation email:", emailError);
-        // Continue processing - email failure shouldn't break webhook
+      if (updatedBooking.bookingType === "FLIGHT") {
+        try {
+          const amadeusResult = await createAmadeusOrderForBooking({
+            id: updatedBooking.id,
+            bookingType: updatedBooking.bookingType,
+            flightOfferData: updatedBooking.flightOfferData,
+            guestDetails: updatedBooking.guestDetails,
+            amadeusOrderId: updatedBooking.amadeusOrderId,
+            amadeusStatus: updatedBooking.amadeusStatus,
+            amadeusRetryCount: updatedBooking.amadeusRetryCount,
+          });
+          if (!amadeusResult.success) {
+            try {
+              await sendAdminAmadeusOrderFailureNotification(updatedBooking, amadeusResult.error);
+            } catch (e) {
+              console.error("Failed to send admin Amadeus failure notification:", e);
+            }
+          }
+        } catch (amadeusError) {
+          console.error("[Paymob Webhook] Amadeus order creation failed:", amadeusError);
+          try {
+            await sendAdminAmadeusOrderFailureNotification(updatedBooking, amadeusError instanceof Error ? amadeusError.message : String(amadeusError));
+          } catch (e) {
+            console.error("Failed to send admin Amadeus failure notification:", e);
+          }
+        }
       }
 
-      // Send admin notification (don't let failures break webhook)
-      try {
-        await sendAdminPaymentNotification(updatedBooking);
-      } catch (notificationError) {
-        console.error("Failed to send admin notification:", notificationError);
-        // Continue processing - notification failure shouldn't break webhook
+      const forEmail = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: {
+          user: true,
+          tour: { select: { title: true, slug: true } },
+          hotel: { select: { name: true, slug: true } },
+          visa: { select: { country: true, type: true } },
+        },
+      });
+      if (forEmail) {
+        try {
+          await sendBookingConfirmationEmail(forEmail);
+        } catch (emailError) {
+          console.error("Failed to send confirmation email:", emailError);
+        }
+        try {
+          await sendAdminPaymentNotification(forEmail);
+        } catch (notificationError) {
+          console.error("Failed to send admin notification:", notificationError);
+        }
       }
     } else {
-      // Log failed payment
       await logActivity({
         action: ActivityActions.PAYMENT_FAILED,
         entityType: "Booking",
@@ -141,10 +182,25 @@ export async function POST(request: NextRequest) {
 
       await prisma.booking.update({
         where: { id: booking.id },
-        data: {
-          paymentStatus: "FAILED",
-        },
+        data: { paymentStatus: "FAILED" },
       });
+
+      const failedBooking = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: { user: true },
+      });
+      if (failedBooking) {
+        try {
+          await sendPaymentFailureEmail(failedBooking);
+        } catch (e) {
+          console.error("Failed to send payment failure email:", e);
+        }
+        try {
+          await sendAdminPaymentFailureNotification(failedBooking);
+        } catch (e) {
+          console.error("Failed to send admin payment failure notification:", e);
+        }
+      }
     }
 
     console.log("[Paymob Webhook] Successfully processed webhook for booking:", bookingId);

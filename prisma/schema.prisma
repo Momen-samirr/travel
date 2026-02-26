@@ -223,6 +223,11 @@ model Booking {
   numberOfChildren2to6     Int?
   numberOfInfants          Int?
   selectedAddonIds         Json?
+  amadeusOrderId           String?
+  pnr                      String?
+  amadeusStatus            String?
+  amadeusError             String?                   @db.Text
+  amadeusRetryCount        Int                       @default(0)
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 
@@ -241,6 +246,20 @@ model Booking {
   @@index([status])
   @@index([paymentStatus])
   @@index([bookingType])
+  @@index([amadeusStatus])
+}
+
+model WebhookIdempotency {
+  id          String   @id @default(cuid())
+  source      String
+  eventId     String
+  bookingId   String?
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@unique([source, eventId])
+  @@index([source])
+  @@index([bookingId])
 }
 
 model Review {

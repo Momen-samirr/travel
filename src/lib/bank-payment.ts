@@ -1,108 +1,61 @@
-// Egyptian Banks Payment Integration
-// This is a generic implementation that can be adapted for specific banks
+/**
+ * Bank transfer (inbound / manual) integration.
+ * Uses BANK_PROFILE_ID, BANK_ACCESS_KEY, BANK_SECRET_KEY only on the backend.
+ * No Paymob keys or logic. No redirect checkout — display account details and rely on admin confirmation.
+ */
 
-const BANK_API_KEY = process.env.BANK_API_KEY!;
-const BANK_MERCHANT_ID = process.env.BANK_MERCHANT_ID!;
+import crypto from "crypto";
 
-interface BankPaymentRequest {
+const BANK_SECRET_KEY = process.env.BANK_SECRET_KEY!;
+
+export interface BankAccountDetails {
+  accountName: string;
+  iban: string;
+  bankName: string;
+  referenceFormat: string;
   amount: number;
   currency: string;
-  orderId: string;
-  customerInfo: {
-    name: string;
-    email: string;
-    phone: string;
-  };
-  returnUrl: string;
-  cancelUrl: string;
+  bookingReference: string;
 }
 
-interface BankPaymentResponse {
-  paymentUrl: string;
-  transactionId: string;
-}
-
-// Generic bank payment gateway implementation
-// This can be customized for specific Egyptian banks (NBE, CIB, ADCB, etc.)
-export async function createBankPayment(
-  request: BankPaymentRequest
-): Promise<BankPaymentResponse> {
-  // This is a placeholder implementation
-  // In production, you would integrate with the specific bank's API
-  // Each bank has different endpoints and authentication methods
-
-  const response = await fetch("https://api.bank-payment-gateway.com/payments", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${BANK_API_KEY}`,
-      "X-Merchant-ID": BANK_MERCHANT_ID,
-    },
-    body: JSON.stringify({
-      amount: request.amount,
-      currency: request.currency,
-      order_id: request.orderId,
-      customer: request.customerInfo,
-      return_url: request.returnUrl,
-      cancel_url: request.cancelUrl,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to create bank payment");
-  }
-
-  const data = await response.json();
+/**
+ * Returns displayable bank account details from env (backend-only).
+ * Used when user chooses bank transfer: show details, booking stays PENDING until admin confirms.
+ */
+export function getBankAccountDetails(
+  amount: number,
+  currency: string,
+  bookingReference: string
+): BankAccountDetails {
   return {
-    paymentUrl: data.payment_url,
-    transactionId: data.transaction_id,
+    accountName: process.env.BANK_ACCOUNT_NAME || "Company Account",
+    iban: process.env.BANK_IBAN || "—",
+    bankName: process.env.BANK_NAME || "—",
+    referenceFormat: process.env.BANK_REFERENCE_FORMAT || `Booking ${bookingReference}`,
+    amount,
+    currency,
+    bookingReference,
   };
 }
 
-export async function verifyBankTransaction(
-  transactionId: string
-): Promise<{
-  status: "success" | "failed" | "pending";
-  amount: number;
-  currency: string;
-}> {
-  const response = await fetch(
-    `https://api.bank-payment-gateway.com/transactions/${transactionId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${BANK_API_KEY}`,
-        "X-Merchant-ID": BANK_MERCHANT_ID,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error("Failed to verify transaction");
+/**
+ * Verifies bank webhook signature using BANK_SECRET_KEY.
+ * Use only when a real bank API sends verified callbacks.
+ */
+export function verifyBankWebhookSignature(payload: string, signature: string): boolean {
+  if (!BANK_SECRET_KEY) {
+    return false;
   }
-
-  const data = await response.json();
-  return {
-    status: data.status,
-    amount: data.amount,
-    currency: data.currency,
-  };
-}
-
-export function verifyBankWebhookSignature(
-  payload: string,
-  signature: string
-): boolean {
-  // Implement bank-specific webhook signature verification
-  // Each bank may use different methods (HMAC, RSA, etc.)
-  const crypto = require("crypto");
   const expectedSignature = crypto
-    .createHmac("sha256", BANK_API_KEY)
+    .createHmac("sha256", BANK_SECRET_KEY)
     .update(payload)
     .digest("hex");
-
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
-  );
+  try {
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, "utf8"),
+      Buffer.from(expectedSignature, "utf8")
+    );
+  } catch {
+    return false;
+  }
 }
-

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
-import { createBankPayment } from "@/lib/bank-payment";
+import { getBankAccountDetails } from "@/lib/bank-payment";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,38 +36,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const guestDetails = booking.guestDetails as any;
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const amount = Number(booking.totalAmount);
+    const currency = booking.currency || "EGP";
 
-    const payment = await createBankPayment({
-      amount: Number(booking.totalAmount),
-      currency: booking.currency,
-      orderId: booking.id,
-      customerInfo: {
-        name: `${guestDetails.firstName || ""} ${guestDetails.lastName || ""}`.trim(),
-        email: guestDetails.email || user.email,
-        phone: guestDetails.phone || "",
-      },
-      returnUrl: `${baseUrl}/bookings/${booking.id}/payment/callback?status=success`,
-      cancelUrl: `${baseUrl}/bookings/${booking.id}/payment/callback?status=cancel`,
-    });
-
-    // Update booking with transaction ID
     await prisma.booking.update({
       where: { id: bookingId },
       data: {
-        paymentTransactionId: payment.transactionId,
         paymentMethod: "BANK",
+        paymentStatus: "PENDING",
+        paymentTransactionId: `${bookingId}-bank`,
       },
     });
 
-    return NextResponse.json({ paymentUrl: payment.paymentUrl });
-  } catch (error: any) {
-    console.error("Error creating bank payment:", error);
+    const bankDetails = getBankAccountDetails(amount, currency, bookingId);
+
+    return NextResponse.json({
+      success: true,
+      message: "Please transfer the amount to the account below. Your booking will be confirmed after we receive and verify the payment.",
+      bankDetails: {
+        accountName: bankDetails.accountName,
+        iban: bankDetails.iban,
+        bankName: bankDetails.bankName,
+        referenceFormat: bankDetails.referenceFormat,
+        amount: bankDetails.amount,
+        currency: bankDetails.currency,
+        bookingReference: bankDetails.bookingReference,
+      },
+    });
+  } catch (error: unknown) {
+    console.error("Error initiating bank transfer:", error);
+    const message = error instanceof Error ? error.message : "Failed to initiate bank transfer";
     return NextResponse.json(
-      { error: error.message || "Failed to create payment" },
+      { error: message },
       { status: 500 }
     );
   }
 }
-

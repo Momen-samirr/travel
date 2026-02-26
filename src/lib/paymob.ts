@@ -1,124 +1,55 @@
 import crypto from "crypto";
 
 const PAYMOB_API_KEY = process.env.PAYMOB_API_KEY!;
+/** Classic Paymob iframe integration ID from the Paymob dashboard (used for payment_keys). */
 const PAYMOB_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID!;
 const PAYMOB_HMAC_SECRET = process.env.PAYMOB_HMAC_SECRET!;
+/** Classic Paymob iframe ID from the Paymob dashboard, used to build the iframe URL. */
+const PAYMOB_IFRAME_ID = process.env.PAYMOB_IFRAME_ID!;
 
-interface PaymobAuthResponse {
-  token: string;
+const PAYMOB_BASE_URL = "https://accept.paymob.com";
+
+export interface PaymobCustomer {
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
 }
 
-interface PaymobOrderResponse {
-  id: number;
+export interface CreatePaymobIframeSessionParams {
+  amountCents: number;
+  currency: string;
+  merchantReference: string; // bookingId
+  customer: PaymobCustomer;
 }
 
-export async function getPaymobAuthToken(): Promise<string> {
+export interface PaymobIframeSessionResult {
+  iframeUrl: string;
+  /** Store in booking.paymentTransactionId for webhook correlation (Paymob sends as order.id). */
+  orderId: string;
+}
+
+/**
+ * Creates a Paymob classic iframe payment session: gets auth token, registers order,
+ * then requests a payment key tied to the classic/iframe integration and builds
+ * the iframe URL. All secrets stay on the backend.
+ */
+export async function createPaymobIframeSession(
+  params: CreatePaymobIframeSessionParams
+): Promise<PaymobIframeSessionResult> {
   if (!PAYMOB_API_KEY) {
     throw new Error("PAYMOB_API_KEY is not configured");
   }
-
-  const response = await fetch("https://accept.paymob.com/api/auth/tokens", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      api_key: PAYMOB_API_KEY,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = "Failed to authenticate with Paymob";
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      errorMessage = errorData.message || errorData.detail || errorMessage;
-    } catch {
-      errorMessage = errorText || errorMessage;
-    }
-    
-    console.error("Paymob auth error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorMessage,
-    });
-    
-    throw new Error(`Failed to authenticate with Paymob: ${errorMessage}`);
+  if (!PAYMOB_INTEGRATION_ID) {
+    throw new Error("PAYMOB_INTEGRATION_ID is not configured (classic Paymob iframe integration)");
+  }
+  if (!PAYMOB_IFRAME_ID) {
+    throw new Error("PAYMOB_IFRAME_ID is not configured");
   }
 
-  const data: PaymobAuthResponse = await response.json();
-  return data.token;
-}
+  const { amountCents, currency, merchantReference, customer } = params;
 
-export async function createPaymobOrder(
-  authToken: string,
-  amount: number,
-  currency: string = "EGP"
-): Promise<number> {
-  const amountCents = Math.round(amount * 100);
-  
-  const requestBody = {
-    auth_token: authToken,
-    delivery_needed: "false",
-    amount_cents: amountCents,
-    currency: currency || "EGP",
-    items: [],
-  };
-
-  const response = await fetch("https://accept.paymob.com/api/ecommerce/orders", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = "Failed to create Paymob order";
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      errorMessage = errorData.message || errorData.detail || errorMessage;
-    } catch {
-      errorMessage = errorText || errorMessage;
-    }
-    
-    console.error("Paymob order creation error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorMessage,
-      requestBody,
-    });
-    
-    throw new Error(`Failed to create Paymob order: ${errorMessage}`);
-  }
-
-  const data: PaymobOrderResponse = await response.json();
-  return data.id;
-}
-
-export async function getPaymentKey(
-  authToken: string,
-  orderId: number,
-  amountCents: number,
-  currency: string,
-  billingData: {
-    first_name: string;
-    last_name: string;
-    email: string;
-    phone_number: string;
-  }
-): Promise<string> {
-  // Validate required fields
-  if (!billingData.first_name || !billingData.last_name || !billingData.email) {
-    throw new Error("Billing data is incomplete: first_name, last_name, and email are required");
-  }
-
-  // Format phone number - Paymob expects Egyptian format (01XXXXXXXXX)
-  let phoneNumber = billingData.phone_number?.replace(/\s+/g, "") || "";
-  // Remove +20 prefix if present and ensure it starts with 0
+  let phoneNumber = customer.phone_number?.replace(/\s+/g, "") || "";
   if (phoneNumber.startsWith("+20")) {
     phoneNumber = "0" + phoneNumber.substring(3);
   } else if (phoneNumber.startsWith("20")) {
@@ -126,140 +57,123 @@ export async function getPaymentKey(
   } else if (!phoneNumber.startsWith("0") && phoneNumber.length > 0) {
     phoneNumber = "0" + phoneNumber;
   }
-  
-  // Ensure phone number is not empty (Paymob requires it)
   if (!phoneNumber || phoneNumber.length < 10) {
-    phoneNumber = "01000000000"; // Default fallback
+    phoneNumber = "01000000000";
   }
 
-  // Paymob billing_data - all fields are required by Paymob API
-  const billingDataPayload = {
-    first_name: billingData.first_name.trim(),
-    last_name: billingData.last_name.trim(),
-    email: billingData.email.trim(),
+  const billingData = {
+    first_name: customer.first_name.trim(),
+    last_name: customer.last_name.trim(),
+    email: customer.email.trim(),
     phone_number: phoneNumber,
-    country: "EG", // Required by Paymob
-    city: "Cairo", // Required by Paymob
-    street: "N/A", // Required by Paymob (can be placeholder if not available)
-    building: "N/A", // Required by Paymob (can be placeholder if not available)
-    floor: "N/A", // Required by Paymob (can be placeholder if not available)
-    apartment: "N/A", // Required by Paymob (can be placeholder if not available)
+    country: "EG",
+    city: "Cairo",
+    street: "N/A",
+    building: "N/A",
+    floor: "N/A",
+    apartment: "N/A",
   };
 
-  const requestBody = {
-    auth_token: authToken,
-    amount_cents: amountCents,
-    expiration: 3600,
-    order_id: orderId,
-    billing_data: billingDataPayload,
-    currency: currency || "EGP",
-    integration_id: parseInt(PAYMOB_INTEGRATION_ID),
-  };
-
-  const response = await fetch("https://accept.paymob.com/api/acceptance/payment_keys", {
+  // 1. Auth token
+  const authRes = await fetch(`${PAYMOB_BASE_URL}/api/auth/tokens`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(requestBody),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: PAYMOB_API_KEY }),
   });
-
-  if (!response.ok) {
-    let errorMessage = "Failed to get payment key";
-    let errorDetails: any = null;
-    
-    try {
-      const contentType = response.headers.get("content-type");
-      const errorText = await response.text();
-      
-      // Try to parse as JSON if content-type suggests it
-      if (contentType?.includes("application/json") || errorText.trim().startsWith("{")) {
-        try {
-          errorDetails = JSON.parse(errorText);
-          console.log("Paymob error response (parsed):", errorDetails);
-          
-          // Paymob error responses can have different structures
-          if (typeof errorDetails === 'string') {
-            errorMessage = errorDetails;
-          } else if (errorDetails.message) {
-            errorMessage = errorDetails.message;
-          } else if (errorDetails.detail) {
-            errorMessage = errorDetails.detail;
-          } else if (errorDetails.error) {
-            errorMessage = typeof errorDetails.error === 'string' 
-              ? errorDetails.error 
-              : JSON.stringify(errorDetails.error);
-          } else if (errorDetails.error_description) {
-            errorMessage = errorDetails.error_description;
-          }
-          
-          // If it's an object with nested error info
-          if (errorDetails.errors) {
-            if (Array.isArray(errorDetails.errors)) {
-              errorMessage = errorDetails.errors.map((e: any) => 
-                typeof e === 'string' ? e : (e.message || JSON.stringify(e))
-              ).join(", ");
-            } else if (typeof errorDetails.errors === 'object') {
-              errorMessage = Object.entries(errorDetails.errors)
-                .map(([key, value]) => `${key}: ${value}`)
-                .join(", ");
-            }
-          }
-          
-          // If errorMessage is still default, try to stringify the whole object
-          if (errorMessage === "Failed to get payment key" && errorDetails) {
-            errorMessage = JSON.stringify(errorDetails);
-          }
-        } catch (parseError) {
-          // If JSON parsing fails, use the raw text
-          errorMessage = errorText || errorMessage;
-          errorDetails = errorText;
-          console.log("Failed to parse error as JSON, using raw text:", errorText);
-        }
-      } else {
-        // Not JSON, use the text directly
-        errorMessage = errorText || response.statusText || errorMessage;
-        errorDetails = errorText;
-        console.log("Paymob error response (text):", errorText);
-      }
-    } catch (e) {
-      // If we can't read the response, use status text
-      errorMessage = response.statusText || errorMessage;
-      console.error("Failed to read error response:", e);
-    }
-    
-    console.error("Paymob payment key error:", {
-      status: response.status,
-      statusText: response.statusText,
-      error: errorMessage,
-      errorDetails,
-      requestBody: {
-        ...requestBody,
-        auth_token: requestBody.auth_token ? "[REDACTED]" : undefined,
-      },
-    });
-    
-    throw new Error(`Paymob API Error (${response.status}): ${errorMessage}`);
+  if (!authRes.ok) {
+    const errText = await authRes.text();
+    throw new Error(`Paymob auth failed: ${errText || authRes.statusText}`);
   }
+  const { token: authToken } = (await authRes.json()) as { token: string };
 
-  const data = await response.json();
-  return data.token;
+  // 2. Register order (for webhook we need order.id)
+  const orderRes = await fetch(`${PAYMOB_BASE_URL}/api/ecommerce/orders`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      auth_token: authToken,
+      delivery_needed: "false",
+      amount_cents: amountCents,
+      currency: currency || "EGP",
+      merchant_order_id: merchantReference,
+      items: [],
+    }),
+  });
+  if (!orderRes.ok) {
+    const errText = await orderRes.text();
+    throw new Error(`Paymob order failed: ${errText || orderRes.statusText}`);
+  }
+  const { id: orderId } = (await orderRes.json()) as { id: number };
+
+  // 3. Payment key (classic/iframe integration)
+  const keyRes = await fetch(`${PAYMOB_BASE_URL}/api/acceptance/payment_keys`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      auth_token: authToken,
+      amount_cents: amountCents,
+      expiration: 3600,
+      order_id: orderId,
+      billing_data: billingData,
+      currency: currency || "EGP",
+      integration_id: parseInt(PAYMOB_INTEGRATION_ID, 10),
+    }),
+  });
+  if (!keyRes.ok) {
+    const errText = await keyRes.text();
+
+    // Log as much detail as possible from Paymob for easier debugging
+    console.error("[Paymob] payment_keys failed", {
+      status: keyRes.status,
+      statusText: keyRes.statusText,
+      rawBody: errText,
+    });
+
+    let msg = "Paymob payment key failed";
+
+    try {
+      const errJson = JSON.parse(errText);
+      console.error("[Paymob] payment_keys error JSON", errJson);
+      msg =
+        errJson.message ||
+        errJson.detail ||
+        errJson.error_description ||
+        msg;
+    } catch {
+      if (errText) {
+        msg = errText;
+      }
+    }
+
+    throw new Error(`Paymob: ${msg}`);
+  }
+  const { token: paymentToken } = (await keyRes.json()) as { token: string };
+
+  // 4. Classic iframe URL
+  const iframeUrl = `${PAYMOB_BASE_URL}/api/acceptance/iframes/${PAYMOB_IFRAME_ID}?payment_token=${encodeURIComponent(
+    paymentToken
+  )}`;
+
+  return {
+    iframeUrl,
+    orderId: orderId.toString(),
+  };
 }
 
-export function verifyPaymobWebhook(
-  obj: Record<string, any>,
-  hmac: string
-): boolean {
+/**
+ * Verifies Paymob webhook HMAC using PAYMOB_HMAC_SECRET.
+ */
+export function verifyPaymobWebhook(obj: Record<string, unknown>, hmac: string): boolean {
+  if (!PAYMOB_HMAC_SECRET) {
+    return false;
+  }
   const orderedItems = Object.keys(obj)
     .sort()
     .map((key) => `${key}=${obj[key]}`)
     .join("&");
-
   const hash = crypto
     .createHmac("sha512", PAYMOB_HMAC_SECRET)
     .update(orderedItems)
     .digest("hex");
-
   return hash === hmac;
 }
-

@@ -164,6 +164,8 @@ export async function sendBookingConfirmationEmail(booking: any): Promise<void> 
             <div class="details">
               <h2>Booking Details</h2>
               <p><strong>Booking ID:</strong> ${booking.id}</p>
+              ${booking.pnr ? `<p><strong>Booking reference / PNR:</strong> ${booking.pnr}</p>` : ""}
+              ${isFlightBooking && booking.amadeusOrderId && !booking.pnr ? `<p><strong>Order reference:</strong> ${booking.amadeusOrderId}</p>` : ""}
               <p><strong>Service:</strong> ${getBookingTitle()}</p>
               <p><strong>Booking Date:</strong> ${formatDate(booking.bookingDate)}</p>
               ${booking.travelDate ? `<p><strong>Travel Date:</strong> ${formatDate(booking.travelDate)}</p>` : ""}
@@ -245,6 +247,166 @@ export async function sendPaymentReceiptEmail(booking: any): Promise<void> {
   `;
 
   await sendEmail(user.email, "Payment Receipt", html);
+}
+
+export async function sendPaymentFailureEmail(booking: any): Promise<void> {
+  const user = booking.user;
+  const guestDetails = booking.guestDetails as any;
+  const isFlightBooking = booking.bookingType === "FLIGHT" && booking.flightOfferData;
+  const contactEmail = isFlightBooking && guestDetails?.contact?.email
+    ? guestDetails.contact.email
+    : guestDetails?.email || user?.email;
+  const to = contactEmail || user?.email;
+  if (!to) {
+    console.warn("[Email] Cannot send payment failure email: no recipient for booking", booking.id);
+    return;
+  }
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #dc2626; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9fafb; }
+          .details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #dc2626; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>Payment Unsuccessful</h1>
+          </div>
+          <div class="content">
+            <p>Dear ${guestDetails?.firstName || user?.name || "Customer"},</p>
+            <p>Your payment for the following booking could not be completed.</p>
+            
+            <div class="details">
+              <h2>Booking Details</h2>
+              <p><strong>Booking ID:</strong> ${booking.id}</p>
+              <p><strong>Amount:</strong> ${formatCurrency(Number(booking.totalAmount), booking.currency)}</p>
+              <p><strong>Payment method:</strong> ${booking.paymentMethod || "N/A"}</p>
+            </div>
+
+            <p><strong>What you can do:</strong></p>
+            <ul>
+              <li>Try again by going to your booking and choosing a payment method again.</li>
+              <li>If the amount was deducted from your account, please contact support with your Booking ID.</li>
+            </ul>
+            <p>If you have any questions, please contact us.</p>
+            <p>Best regards,<br>Tourism Co Team</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated email. Please do not reply.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  await sendEmail(to, "Payment Unsuccessful – Booking " + booking.id, html);
+}
+
+export async function sendAdminAmadeusOrderFailureNotification(booking: any, errorMessage?: string): Promise<void> {
+  const admins = await prisma.user.findMany({
+    where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } },
+    select: { email: true },
+  });
+  if (admins.length === 0) return;
+
+  const guestDetails = booking.guestDetails as any;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #f59e0b; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9fafb; }
+          .details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #f59e0b; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>[Admin] Flight order (Amadeus) failed</h1>
+          </div>
+          <div class="content">
+            <p>Payment was successful but creating the flight order with Amadeus failed for this booking.</p>
+            <div class="details">
+              <p><strong>Booking ID:</strong> ${booking.id}</p>
+              <p><strong>Customer:</strong> ${guestDetails?.contact?.email ?? guestDetails?.email ?? booking.user?.email ?? "N/A"}</p>
+              <p><strong>Amount:</strong> ${formatCurrency(Number(booking.totalAmount), booking.currency)}</p>
+              ${errorMessage ? `<p><strong>Error:</strong> ${errorMessage}</p>` : ""}
+            </div>
+            <p>Retries will run automatically, or you can retry from the admin dashboard.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated notification.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  await Promise.all(
+    admins.map((admin) =>
+      sendEmail(admin.email, `[Admin] Amadeus order failed – Booking ${booking.id}`, html)
+    )
+  );
+}
+
+export async function sendAdminPaymentFailureNotification(booking: any): Promise<void> {
+  const admins = await prisma.user.findMany({
+    where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } },
+    select: { email: true },
+  });
+  if (admins.length === 0) return;
+
+  const guestDetails = booking.guestDetails as any;
+  const html = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #dc2626; color: white; padding: 20px; text-align: center; }
+          .content { padding: 20px; background: #f9fafb; }
+          .details { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; border-left: 4px solid #dc2626; }
+          .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>[Admin] Payment Failed</h1>
+          </div>
+          <div class="content">
+            <p>A payment has failed for the following booking:</p>
+            <div class="details">
+              <p><strong>Booking ID:</strong> ${booking.id}</p>
+              <p><strong>Customer:</strong> ${guestDetails?.firstName || ""} ${guestDetails?.lastName || ""} (${guestDetails?.email || booking.user?.email || "N/A"})</p>
+              <p><strong>Amount:</strong> ${formatCurrency(Number(booking.totalAmount), booking.currency)}</p>
+              <p><strong>Payment method:</strong> ${booking.paymentMethod || "N/A"}</p>
+            </div>
+            <p>Review in the admin dashboard if needed.</p>
+          </div>
+          <div class="footer">
+            <p>This is an automated notification.</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  await Promise.all(admins.map((admin) => sendEmail(admin.email, `[Admin] Payment Failed – Booking ${booking.id}`, html)));
 }
 
 export async function sendAdminNotification(

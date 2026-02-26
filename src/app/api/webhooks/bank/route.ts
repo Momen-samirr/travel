@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyBankWebhookSignature } from "@/lib/bank-payment";
-import { sendBookingConfirmationEmail, sendAdminPaymentNotification } from "@/lib/email";
+import { sendBookingConfirmationEmail, sendAdminPaymentNotification, sendPaymentFailureEmail, sendAdminPaymentFailureNotification, sendAdminAmadeusOrderFailureNotification } from "@/lib/email";
 import { logActivity, ActivityActions } from "@/lib/activity-log";
+import { ensureWebhookIdempotency, createAmadeusOrderForBooking } from "@/lib/post-payment-flight-order";
 
 export async function POST(request: NextRequest) {
+  if (!process.env.BANK_SECRET_KEY) {
+    return NextResponse.json(
+      { error: "Bank webhook not configured" },
+      { status: 501 }
+    );
+  }
+
   const webhookReceivedAt = new Date();
   let bookingId: string | null = null;
   
@@ -90,15 +98,19 @@ export async function POST(request: NextRequest) {
 
     bookingId = booking.id;
 
-    // Check if already processed (idempotency check)
+    const eventId = `bank:${transaction_id}`;
+    const idem = await ensureWebhookIdempotency("BANK", eventId, booking.id);
+    if (idem === "duplicate") {
+      console.log("[Bank Webhook] Already processed (idempotency):", eventId);
+      return NextResponse.json({ success: true, message: "Already processed" });
+    }
+
     if (booking.paymentStatus === "PAID" && (status === "success" || status === "completed")) {
-      console.log("[Bank Webhook] Booking already paid, skipping update:", booking.id);
       return NextResponse.json({ success: true, message: "Already processed" });
     }
 
     // Update booking based on transaction status
     if (status === "success" || status === "completed") {
-      // Log activity before updating
       await logActivity({
         action: ActivityActions.PAYMENT_SUCCESS,
         entityType: "Booking",
@@ -127,23 +139,56 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // Send confirmation email (don't let failures break webhook)
-      try {
-        await sendBookingConfirmationEmail(updatedBooking);
-      } catch (emailError) {
-        console.error("Failed to send confirmation email:", emailError);
-        // Continue processing - email failure shouldn't break webhook
+      if (updatedBooking.bookingType === "FLIGHT") {
+        try {
+          const amadeusResult = await createAmadeusOrderForBooking({
+            id: updatedBooking.id,
+            bookingType: updatedBooking.bookingType,
+            flightOfferData: updatedBooking.flightOfferData,
+            guestDetails: updatedBooking.guestDetails,
+            amadeusOrderId: updatedBooking.amadeusOrderId,
+            amadeusStatus: updatedBooking.amadeusStatus,
+            amadeusRetryCount: updatedBooking.amadeusRetryCount,
+          });
+          if (!amadeusResult.success) {
+            try {
+              await sendAdminAmadeusOrderFailureNotification(updatedBooking, amadeusResult.error);
+            } catch (e) {
+              console.error("Failed to send admin Amadeus failure notification:", e);
+            }
+          }
+        } catch (amadeusError) {
+          console.error("[Bank Webhook] Amadeus order creation failed:", amadeusError);
+          try {
+            await sendAdminAmadeusOrderFailureNotification(updatedBooking, amadeusError instanceof Error ? amadeusError.message : String(amadeusError));
+          } catch (e) {
+            console.error("Failed to send admin Amadeus failure notification:", e);
+          }
+        }
       }
 
-      // Send admin notification (don't let failures break webhook)
-      try {
-        await sendAdminPaymentNotification(updatedBooking);
-      } catch (notificationError) {
-        console.error("Failed to send admin notification:", notificationError);
-        // Continue processing - notification failure shouldn't break webhook
+      const forEmail = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: {
+          user: true,
+          tour: { select: { title: true, slug: true } },
+          hotel: { select: { name: true, slug: true } },
+          visa: { select: { country: true, type: true } },
+        },
+      });
+      if (forEmail) {
+        try {
+          await sendBookingConfirmationEmail(forEmail);
+        } catch (emailError) {
+          console.error("Failed to send confirmation email:", emailError);
+        }
+        try {
+          await sendAdminPaymentNotification(forEmail);
+        } catch (notificationError) {
+          console.error("Failed to send admin notification:", notificationError);
+        }
       }
     } else if (status === "failed" || status === "cancelled") {
-      // Log failed payment
       await logActivity({
         action: ActivityActions.PAYMENT_FAILED,
         entityType: "Booking",
@@ -158,10 +203,25 @@ export async function POST(request: NextRequest) {
 
       await prisma.booking.update({
         where: { id: booking.id },
-        data: {
-          paymentStatus: "FAILED",
-        },
+        data: { paymentStatus: "FAILED" },
       });
+
+      const failedBooking = await prisma.booking.findUnique({
+        where: { id: booking.id },
+        include: { user: true },
+      });
+      if (failedBooking) {
+        try {
+          await sendPaymentFailureEmail(failedBooking);
+        } catch (e) {
+          console.error("Failed to send payment failure email:", e);
+        }
+        try {
+          await sendAdminPaymentFailureNotification(failedBooking);
+        } catch (e) {
+          console.error("Failed to send admin payment failure notification:", e);
+        }
+      }
     }
 
     console.log("[Bank Webhook] Successfully processed webhook for booking:", bookingId);

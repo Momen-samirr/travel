@@ -104,7 +104,7 @@ export function AirportAutocomplete({
     timeoutRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const response = await fetch(`/api/amadeus/airports?q=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/airports?q=${encodeURIComponent(query)}`);
         if (response.ok) {
           const data = await response.json();
           setAirports(data.locations || []);

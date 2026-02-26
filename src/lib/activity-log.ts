@@ -92,5 +92,9 @@ export const ActivityActions = {
   // Admin actions
   ADMIN_ACTION: "ADMIN_ACTION",
   SETTINGS_UPDATED: "SETTINGS_UPDATED",
+
+  // Amadeus flight order
+  AMADEUS_ORDER_CREATED: "AMADEUS_ORDER_CREATED",
+  AMADEUS_ORDER_FAILED: "AMADEUS_ORDER_FAILED",
 } as const;
 
