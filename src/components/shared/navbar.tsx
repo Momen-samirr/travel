@@ -8,6 +8,7 @@ import { Menu, Plane, X, Luggage } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 const navLinks = [
   { href: "/flights", label: "Flights" },
@@ -27,21 +28,27 @@ export function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
-          <Link 
-            href="/" 
+          <Link
+            href="/"
             className="flex items-center gap-2 font-bold text-xl text-primary transition-all duration-300 ease-in-out hover:opacity-80"
           >
             <div className="relative">
-              <Plane className="h-7 w-7 text-primary" />
-              <Luggage className="h-4 w-4 text-accent absolute -bottom-1 -right-1" />
+              <Image
+                src={"/logo.jpg"}
+                alt="Tourism Co Logo"
+                width={100}
+                height={100}
+                className="h-20 w-20"
+              />
             </div>
-            <span className="hidden sm:inline">Tourism Co</span>
+            <span className="hidden sm:inline">Tishoury</span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
-              const isActive = pathname === link.href || pathname?.startsWith(link.href + "/");
+              const isActive =
+                pathname === link.href || pathname?.startsWith(link.href + "/");
               return (
                 <motion.div
                   key={link.href}
@@ -54,7 +61,7 @@ export function Navbar() {
                       "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ease-in-out relative",
                       isActive
                         ? "bg-primary text-primary-foreground"
-                        : "text-foreground hover:bg-muted hover:text-foreground"
+                        : "text-foreground hover:bg-muted hover:text-foreground",
                     )}
                   >
                     {link.label}
@@ -62,7 +69,11 @@ export function Navbar() {
                       <motion.div
                         layoutId="activeIndicator"
                         className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-foreground rounded-full"
-                        transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 380,
+                          damping: 30,
+                        }}
                       />
                     )}
                   </Link>
@@ -86,7 +97,11 @@ export function Navbar() {
             <SignedOut>
               <div className="hidden sm:block">
                 <SignInButton mode="modal">
-                  <Button variant="default" size="sm" className="rounded-full px-6">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="rounded-full px-6"
+                  >
                     Sign In
                   </Button>
                 </SignInButton>
@@ -101,7 +116,11 @@ export function Navbar() {
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" />
+              ) : (
+                <Menu className="h-6 w-6" />
+              )}
             </Button>
           </div>
         </div>
@@ -125,7 +144,9 @@ export function Navbar() {
               >
                 <div className="flex flex-col gap-2">
                   {navLinks.map((link, index) => {
-                    const isActive = pathname === link.href || pathname?.startsWith(link.href + "/");
+                    const isActive =
+                      pathname === link.href ||
+                      pathname?.startsWith(link.href + "/");
                     return (
                       <motion.div
                         key={link.href}
@@ -140,7 +161,7 @@ export function Navbar() {
                             "px-4 py-3 text-base font-medium rounded-lg transition-all duration-300 ease-in-out block",
                             isActive
                               ? "bg-primary text-primary-foreground"
-                              : "text-foreground hover:bg-muted"
+                              : "text-foreground hover:bg-muted",
                           )}
                         >
                           {link.label}
@@ -156,7 +177,10 @@ export function Navbar() {
                       className="px-4 pt-2"
                     >
                       <SignInButton mode="modal">
-                        <Button variant="default" className="w-full rounded-full">
+                        <Button
+                          variant="default"
+                          className="w-full rounded-full"
+                        >
                           Sign In
                         </Button>
                       </SignInButton>
@@ -186,4 +210,3 @@ export function Navbar() {
     </nav>
   );
 }
-
