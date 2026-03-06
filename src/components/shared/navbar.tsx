@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton, SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
+import { useAuth } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { Menu, Plane, X, Luggage } from "lucide-react";
-import { useState } from "react";
+import { Menu, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
@@ -21,10 +22,68 @@ const navLinks = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const { isSignedIn, userId } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!isSignedIn || !userId) {
+      return;
+    }
+
+    let isMounted = true;
+    let retryTimeout: NodeJS.Timeout | null = null;
+
+    const fetchCurrentUser = async (attempt = 0) => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          // User sync may still be in-flight right after sign-in.
+          if (response.status === 401 && attempt < 2 && isMounted) {
+            retryTimeout = setTimeout(() => {
+              void fetchCurrentUser(attempt + 1);
+            }, 600);
+            return;
+          }
+
+          if (isMounted) {
+            setIsAdmin(false);
+          }
+          return;
+        }
+
+        const data = (await response.json()) as {
+          user?: { role?: string };
+        };
+
+        const role = data.user?.role;
+        if (isMounted) {
+          setIsAdmin(role === "ADMIN" || role === "SUPER_ADMIN");
+        }
+      } catch {
+        if (isMounted) {
+          setIsAdmin(false);
+        }
+      }
+    };
+
+    fetchCurrentUser();
+
+    return () => {
+      isMounted = false;
+      if (retryTimeout) {
+        clearTimeout(retryTimeout);
+      }
+    };
+  }, [isSignedIn, userId]);
 
   return (
-    <nav className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80 shadow-sm">
+    <nav className="sticky top-0 z-50 border-b bg-white/95 backdrop-blur-md supports-backdrop-filter:bg-white/80 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex h-20 items-center justify-between">
           {/* Logo */}
@@ -91,6 +150,13 @@ export function Navbar() {
                     My Trips
                   </Button>
                 </Link>
+                {isAdmin ? (
+                  <Link href="/admin">
+                    <Button variant="outline" size="sm" className="text-sm">
+                      Admin
+                    </Button>
+                  </Link>
+                ) : null}
               </div>
               <UserButton afterSignOutUrl="/" />
             </SignedIn>
@@ -199,6 +265,15 @@ export function Navbar() {
                       >
                         My Trips
                       </Link>
+                      {isAdmin ? (
+                        <Link
+                          href="/admin"
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="px-4 py-3 text-base font-medium rounded-lg transition-all duration-300 ease-in-out hover:bg-muted block"
+                        >
+                          Admin
+                        </Link>
+                      ) : null}
                     </motion.div>
                   </SignedIn>
                 </div>

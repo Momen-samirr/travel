@@ -29,6 +29,7 @@ export function VideoHero({
   const [retryCount, setRetryCount] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxRetries = 2;
 
   useEffect(() => {
@@ -62,6 +63,9 @@ export function VideoHero({
 
     return () => {
       window.removeEventListener("resize", checkMobile);
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
       if (containerElement) {
         observer.unobserve(containerElement);
       }
@@ -80,7 +84,7 @@ export function VideoHero({
     // Retry loading if we haven't exceeded max retries
     if (retryCount < maxRetries && videoRef.current) {
       setRetryCount((prev) => prev + 1);
-      setTimeout(() => {
+      retryTimeoutRef.current = setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.load();
         }
@@ -121,7 +125,7 @@ export function VideoHero({
 
       {/* Poster Image - Mobile, fallback, or when video fails */}
       {(isMobile || !isVideoLoaded || videoError) && (
-        <div className="absolute inset-0 w-full h-full bg-gradient-to-br from-primary/20 via-accent/10 to-primary/30">
+        <div className="absolute inset-0 w-full h-full bg-linear-to-br from-primary/20 via-accent/10 to-primary/30">
           {posterSrc && (
             <Image
               src={posterSrc}
@@ -141,7 +145,7 @@ export function VideoHero({
 
       {/* Dark Overlay */}
       <div
-        className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-black/30 z-10"
+        className="absolute inset-0 bg-linear-to-b from-black/60 via-black/10 to-black/30 z-10"
         style={{
           backgroundColor: `rgba(0, 0, 0, ${overlayOpacity})`,
         }}
@@ -158,7 +162,7 @@ export function VideoHero({
       </motion.div>
 
       {/* Loading indicator */}
-      {shouldLoadVideo && !isVideoLoaded && !isMobile && (
+      {shouldLoadVideo && !isVideoLoaded && !isMobile && !videoError && (
         <div className="absolute inset-0 flex items-center justify-center z-15">
           <div className="w-12 h-12 border-4 border-white/30 border-t-white rounded-full animate-spin" />
         </div>

@@ -39,19 +39,32 @@ export function PackageFiltersSidebar({
 
   useEffect(() => {
     if (!filterOptions) {
+      const controller = new AbortController();
+      const queryParams = new URLSearchParams();
+      if (filters.packageType) {
+        queryParams.set("packageType", filters.packageType);
+      }
+      const query = queryParams.toString();
       // Fetch filter options from unified packages endpoint
-      fetch("/api/charter-packages/filters")
+      fetch(`/api/charter-packages/filters${query ? `?${query}` : ""}`, {
+        signal: controller.signal,
+      })
         .then((res) => res.json())
         .then((data) => {
           setOptions(data);
           setLoading(false);
         })
         .catch((error) => {
+          if (error instanceof Error && error.name === "AbortError") return;
           console.error("Failed to fetch filter options:", error);
           setLoading(false);
         });
+
+      return () => {
+        controller.abort();
+      };
     }
-  }, [filterOptions]);
+  }, [filterOptions, filters.packageType]);
 
   const calculateActiveFilterCount = (): number => {
     let count = 0;

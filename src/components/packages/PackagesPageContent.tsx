@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Package, Loader2, Filter } from "lucide-react";
 import { StaggerList } from "@/components/motion/stagger-list";
 import { PackageCard } from "@/components/packages/shared/PackageCard";
@@ -25,6 +25,16 @@ interface PackagesPageContentProps {
   page: number;
   limit: number;
   selectedType?: PackageType;
+  initialFilterOptions?: FilterOptions;
+}
+
+interface FilterOptions {
+  countries: string[];
+  cities: Record<string, string[]>;
+  priceRange: { min: number; max: number; currency: string };
+  durationRange: { minNights: number; maxNights: number; minDays: number; maxDays: number };
+  hotelRatings: number[];
+  packageTypes: PackageType[];
 }
 
 export function PackagesPageContent({
@@ -33,9 +43,12 @@ export function PackagesPageContent({
   page: initialPage,
   limit,
   selectedType,
+  initialFilterOptions,
 }: PackagesPageContentProps) {
+  type SortBy = NonNullable<CharterPackageFilters["sortBy"]>;
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsKey = searchParams.toString();
   const [activeType, setActiveType] = useState<PackageType | "ALL">(
     selectedType || "ALL"
   );
@@ -44,71 +57,81 @@ export function PackagesPageContent({
   const [total, setTotal] = useState(initialTotal);
   const [page, setPage] = useState(initialPage);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [filterOptions] = useState<FilterOptions | undefined>(initialFilterOptions);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeRequestRef = useRef<AbortController | null>(null);
+  const requestSeqRef = useRef(0);
+  const isMountedRef = useRef(true);
+  const hasHydratedRef = useRef(false);
 
   // Parse filters from URL
   const parseFiltersFromURL = useCallback((): CharterPackageFilters => {
+    const params = new URLSearchParams(searchParamsKey);
     const filters: CharterPackageFilters = {
-      page: parseInt(searchParams.get("page") || "1"),
+      page: parseInt(params.get("page") || "1"),
       limit: limit,
-      sortBy: (searchParams.get("sortBy") as any) || "newest",
+      sortBy: (params.get("sortBy") as SortBy) || "newest",
       hotelRating: [],
     };
 
-    if (searchParams.get("destinationCountry")) {
-      filters.destinationCountry = searchParams.get("destinationCountry") || undefined;
+    if (params.get("destinationCountry")) {
+      filters.destinationCountry = params.get("destinationCountry") || undefined;
     }
-    if (searchParams.get("destinationCity")) {
-      filters.destinationCity = searchParams.get("destinationCity") || undefined;
+    if (params.get("destinationCity")) {
+      filters.destinationCity = params.get("destinationCity") || undefined;
     }
-    if (searchParams.get("minPrice")) {
-      filters.minPrice = parseInt(searchParams.get("minPrice") || "0");
+    if (params.get("minPrice")) {
+      filters.minPrice = parseInt(params.get("minPrice") || "0");
     }
-    if (searchParams.get("maxPrice")) {
-      filters.maxPrice = parseInt(searchParams.get("maxPrice") || "0");
+    if (params.get("maxPrice")) {
+      filters.maxPrice = parseInt(params.get("maxPrice") || "0");
     }
-    if (searchParams.get("minNights")) {
-      filters.minNights = parseInt(searchParams.get("minNights") || "0");
+    if (params.get("minNights")) {
+      filters.minNights = parseInt(params.get("minNights") || "0");
     }
-    if (searchParams.get("maxNights")) {
-      filters.maxNights = parseInt(searchParams.get("maxNights") || "0");
+    if (params.get("maxNights")) {
+      filters.maxNights = parseInt(params.get("maxNights") || "0");
     }
-    if (searchParams.get("minDays")) {
-      filters.minDays = parseInt(searchParams.get("minDays") || "0");
+    if (params.get("minDays")) {
+      filters.minDays = parseInt(params.get("minDays") || "0");
     }
-    if (searchParams.get("maxDays")) {
-      filters.maxDays = parseInt(searchParams.get("maxDays") || "0");
+    if (params.get("maxDays")) {
+      filters.maxDays = parseInt(params.get("maxDays") || "0");
     }
-    if (searchParams.get("departureDateFrom")) {
-      filters.departureDateFrom = searchParams.get("departureDateFrom") || undefined;
+    if (params.get("departureDateFrom")) {
+      filters.departureDateFrom = params.get("departureDateFrom") || undefined;
     }
-    if (searchParams.get("departureDateTo")) {
-      filters.departureDateTo = searchParams.get("departureDateTo") || undefined;
+    if (params.get("departureDateTo")) {
+      filters.departureDateTo = params.get("departureDateTo") || undefined;
     }
-    if (searchParams.get("hotelRating")) {
-      filters.hotelRating = searchParams
+    if (params.get("hotelRating")) {
+      filters.hotelRating = params
         .get("hotelRating")
         ?.split(",")
         .map(Number)
         .filter((n) => !isNaN(n)) || [];
     }
-    if (searchParams.get("packageType")) {
-      filters.packageType = searchParams.get("packageType") as any;
+    if (params.get("packageType")) {
+      filters.packageType = params.get("packageType") as PackageType;
     }
-    if (searchParams.get("type")) {
-      filters.packageType = searchParams.get("type") as any;
+    if (params.get("type")) {
+      filters.packageType = params.get("type") as PackageType;
     }
 
     return filters;
-  }, [searchParams, limit]);
+  }, [searchParamsKey, limit]);
 
   const [filters, setFilters] = useState<CharterPackageFilters>(parseFiltersFromURL);
 
-  // Debounce function
-  const debounce = useCallback((func: Function, wait: number) => {
-    let timeout: NodeJS.Timeout;
-    return (...args: any[]) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func(...args), wait);
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      if (activeRequestRef.current) {
+        activeRequestRef.current.abort();
+      }
     };
   }, []);
 
@@ -160,14 +183,25 @@ export function PackagesPageContent({
         params.set("page", newFilters.page.toString());
       }
 
-      router.push(`/packages?${params.toString()}`, { scroll: false });
+      const nextQuery = params.toString();
+      const nextUrl = nextQuery ? `/packages?${nextQuery}` : "/packages";
+      if (nextQuery === searchParamsKey) {
+        return;
+      }
+      router.replace(nextUrl, { scroll: false });
     },
-    [router]
+    [router, searchParamsKey]
   );
 
   // Fetch packages with filters
   const fetchPackages = useCallback(
     async (filterParams: CharterPackageFilters) => {
+      if (activeRequestRef.current) {
+        activeRequestRef.current.abort();
+      }
+      const controller = new AbortController();
+      activeRequestRef.current = controller;
+      const requestId = ++requestSeqRef.current;
       setLoading(true);
       try {
         const queryParams = new URLSearchParams();
@@ -184,53 +218,87 @@ export function PackagesPageContent({
           }
         });
 
-        const response = await fetch(`/api/packages?${queryParams.toString()}`);
+        const response = await fetch(`/api/packages?${queryParams.toString()}`, {
+          signal: controller.signal,
+        });
         if (!response.ok) {
           throw new Error("Failed to fetch packages");
         }
         const data = await response.json();
+        if (!isMountedRef.current || requestId !== requestSeqRef.current) {
+          return;
+        }
         setPackages(data.packages);
         setTotal(data.total);
         setPage(data.page);
       } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.name === "AbortError" || !isMountedRef.current)
+        ) {
+          return;
+        }
         console.error("Error fetching packages:", error);
         setPackages([]);
         setTotal(0);
       } finally {
+        if (requestId !== requestSeqRef.current || !isMountedRef.current) {
+          return;
+        }
         setLoading(false);
       }
     },
     []
   );
 
-  // Debounced fetch function
-  const debouncedFetch = useMemo(
-    () => debounce((filterParams: CharterPackageFilters) => {
-      fetchPackages(filterParams);
-      updateURL(filterParams);
-    }, 300),
-    [debounce, fetchPackages, updateURL]
+  const runDebouncedUrlSync = useCallback(
+    (filterParams: CharterPackageFilters) => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+      debounceTimeoutRef.current = setTimeout(() => {
+        if (!isMountedRef.current) return;
+        updateURL(filterParams);
+      }, 300);
+    },
+    [updateURL]
   );
+
+  useEffect(() => {
+    const nextFilters = parseFiltersFromURL();
+    setFilters(nextFilters);
+    setPage(nextFilters.page || 1);
+    const nextType = nextFilters.packageType || "ALL";
+    setActiveType(nextType);
+
+    if (!hasHydratedRef.current) {
+      hasHydratedRef.current = true;
+      return;
+    }
+
+    fetchPackages(nextFilters);
+  }, [searchParamsKey, parseFiltersFromURL, fetchPackages]);
 
   // Handle filter changes
   const handleFiltersChange = useCallback(
     (newFilters: CharterPackageFilters) => {
       setFilters(newFilters);
       setPage(1); // Reset to first page on filter change
-      debouncedFetch({ ...newFilters, page: 1 });
+      runDebouncedUrlSync({ ...newFilters, page: 1 });
     },
-    [debouncedFetch]
+    [runDebouncedUrlSync]
   );
 
   // Handle sort change
   const handleSortChange = useCallback(
     (sortBy: string) => {
-      const newFilters = { ...filters, sortBy: sortBy as any, page: 1 };
+      const nextSort = sortBy as SortBy;
+      const newFilters = { ...filters, sortBy: nextSort, page: 1 };
       setFilters(newFilters);
       setPage(1);
-      debouncedFetch(newFilters);
+      runDebouncedUrlSync(newFilters);
     },
-    [filters, debouncedFetch]
+    [filters, runDebouncedUrlSync]
   );
 
   // Handle page change
@@ -239,10 +307,9 @@ export function PackagesPageContent({
       const newFilters = { ...filters, page: newPage };
       setFilters(newFilters);
       setPage(newPage);
-      fetchPackages(newFilters);
       updateURL(newFilters);
     },
-    [filters, fetchPackages, updateURL]
+    [filters, updateURL]
   );
 
   const handleTypeChange = (type: PackageType | "ALL") => {
@@ -254,14 +321,14 @@ export function PackagesPageContent({
     };
     setFilters(newFilters);
     setPage(1);
-    debouncedFetch(newFilters);
+    runDebouncedUrlSync(newFilters);
   };
 
   const totalPages = Math.ceil(total / limit);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <section className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white py-16 md:py-20">
+      <section className="relative bg-linear-to-br from-primary via-primary/90 to-primary/80 text-white py-16 md:py-20">
         <div className="absolute inset-0 bg-[url('/api/placeholder/1920/600')] bg-cover bg-center opacity-10"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
@@ -285,6 +352,7 @@ export function PackagesPageContent({
             <PackageFiltersSidebar
               filters={filters}
               onFiltersChange={handleFiltersChange}
+              filterOptions={filterOptions}
             />
           </aside>
 
@@ -305,6 +373,7 @@ export function PackagesPageContent({
                   <PackageFiltersSidebar
                     filters={filters}
                     onFiltersChange={handleFiltersChange}
+                    filterOptions={filterOptions}
                   />
                 </div>
               </SheetContent>

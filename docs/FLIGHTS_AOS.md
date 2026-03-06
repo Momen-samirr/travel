@@ -12,6 +12,12 @@ Flight search on this site uses a **redirect-only** integration with Amadeus Onl
 ## Configuration
 
 - **`NEXT_PUBLIC_AOS_AGENCY`** – Agency subdomain for the AOS base URL (e.g. `youragency` for `https://youragency.amadeusonlinesuite.com`). Set in `.env` or `.env.local`. No Amadeus API keys are required for this flow.
+- **Optional contract tuning (AOS query params):**
+  - `NEXT_PUBLIC_AOS_SEARCH_KEY_ONEWAY` – default `OW`
+  - `NEXT_PUBLIC_AOS_SEARCH_KEY_ROUND` – default `IRT`
+  - `NEXT_PUBLIC_AOS_TRIPTYPE_ONEWAY` – default `1`
+  - `NEXT_PUBLIC_AOS_TRIPTYPE_ROUND` – default `2`
+  - Use these only if your AOS agency expects different values for one-way/round-trip search contracts.
 
 ## Implementation
 

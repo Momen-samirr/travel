@@ -107,7 +107,7 @@ export default async function RegularPackageDetailPage({
             priority
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary to-primary/80" />
+          <div className="w-full h-full bg-linear-to-br from-primary to-primary/80" />
         )}
         <div className="absolute inset-0 bg-black/40" />
         <div className="container mx-auto px-4 relative z-10 h-full flex items-end pb-12">
@@ -170,7 +170,7 @@ export default async function RegularPackageDetailPage({
                   <ul className="space-y-2">
                     {includedServices.map((service, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                        <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
                         <span>{service}</span>
                       </li>
                     ))}
@@ -189,7 +189,7 @@ export default async function RegularPackageDetailPage({
                   <ul className="space-y-2">
                     {excludedServices.map((service, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <X className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                        <X className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
                         <span>{service}</span>
                       </li>
                     ))}
@@ -208,7 +208,7 @@ export default async function RegularPackageDetailPage({
                   <ul className="space-y-3">
                     {excursionProgram.map((excursion, index) => (
                       <li key={index} className="flex gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
+                        <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
                           {index + 1}
                         </div>
                         <div className="flex-1">
@@ -234,7 +234,7 @@ export default async function RegularPackageDetailPage({
                   <ul className="space-y-2">
                     {requiredDocuments.map((doc, index) => (
                       <li key={index} className="flex items-start gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                         <span>{doc}</span>
                       </li>
                     ))}
@@ -282,11 +282,11 @@ export default async function RegularPackageDetailPage({
                   <DynamicBookingForm
                     packageData={{
                       id: pkg.id,
-                      basePrice: pkg.basePrice,
-                      priceRangeMin: pkg.priceRangeMin,
-                      priceRangeMax: pkg.priceRangeMax,
+                      basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
+                      priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
+                      priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
                       currency: pkg.currency,
-                      discount: pkg.discount,
+                      discount: pkg.discount ? Number(pkg.discount) : null,
                       hotelOptions: pkg.hotelOptions.map((opt) => ({
                         id: opt.id,
                         hotel: {
@@ -298,8 +298,16 @@ export default async function RegularPackageDetailPage({
                         starRating: opt.starRating,
                         bookingRating: opt.bookingRating,
                       })),
-                      departureOptions: pkg.departureOptions,
-                      addons: pkg.addons,
+                      departureOptions: pkg.departureOptions.map((option) => ({
+                        ...option,
+                        priceModifier: option.priceModifier
+                          ? Number(option.priceModifier)
+                          : null,
+                      })),
+                      addons: pkg.addons.map((addon) => ({
+                        ...addon,
+                        price: Number(addon.price),
+                      })),
                     }}
                   />
                 </CardContent>

@@ -2,34 +2,37 @@ import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { addSecurityHeaders } from "./lib/security-headers";
 
-const isPublicRoute = createRouteMatcher([
-  "/",
-  "/tours(.*)",
-  "/flights(.*)",
-  "/hotels(.*)",
-  "/visa(.*)",
-  "/blogs(.*)",
-  "/reviews(.*)",
-  "/about",
-  "/contact",
-  "/api/webhooks(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
+const isProtectedPageRoute = createRouteMatcher([
+  "/admin(.*)",
+  "/bookings(.*)",
+  "/complaints(.*)",
 ]);
 
-const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+const isProtectedApiRoute = createRouteMatcher([
+  "/api/admin(.*)",
+]);
 
 export default clerkMiddleware(async (auth, request) => {
   let response: NextResponse;
+  const requiresAuth =
+    isProtectedPageRoute(request) || isProtectedApiRoute(request);
 
-  if (!isPublicRoute(request)) {
+  if (requiresAuth) {
     const { userId } = await auth();
-    
+
     if (!userId) {
-      // Redirect to sign-in with return URL
+      if (isProtectedApiRoute(request)) {
+        return NextResponse.json(
+          { error: "Unauthorized" },
+          { status: 401 }
+        );
+      }
+
+      // Redirect to sign-in with return URL for protected pages
       const signInUrl = new URL("/sign-in", request.url);
-      signInUrl.searchParams.set("redirect", request.url);
-      
+      const returnPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+      signInUrl.searchParams.set("redirect", returnPath);
+
       return NextResponse.redirect(signInUrl);
     }
   }

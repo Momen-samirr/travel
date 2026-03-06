@@ -80,11 +80,6 @@ export async function POST() {
         },
       });
     } else {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { lastLoginAt: new Date() },
-      });
-
       return NextResponse.json({
         success: true,
         message: "User already exists",

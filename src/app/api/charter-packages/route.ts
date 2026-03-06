@@ -5,6 +5,7 @@ import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-f
 import { requireAdmin } from "@/lib/clerk";
 import { logActivity, ActivityActions } from "@/lib/activity-log";
 import { slugify } from "@/lib/utils";
+import { PackageType } from "@/services/packages/types";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
     const isActive = searchParams.get("isActive") !== "false";
 
     // Build where clause
-    const where: any = { isActive };
+    const where: any = { isActive, type: PackageType.CHARTER };
 
     // Destination filters
     if (filters.destinationCountry) {

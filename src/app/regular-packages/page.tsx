@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { Package } from "lucide-react";
 import { CharterPackagesPageContent } from "@/components/charter-packages/CharterPackagesPageContent";
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
 import { PackageType } from "@/services/packages/types";
+import { getPackageFilterOptions } from "@/lib/package-filter-options";
 
 export const metadata = {
   title: "Regular Travel Packages",
@@ -37,7 +37,7 @@ export default async function RegularPackagesPage({
   const limit = Number(filters.limit) || 12;
 
   // Build where clause - filter by REGULAR type only
-  const where: any = { isActive: true, type: PackageType.REGULAR };
+  const where = { isActive: true, type: PackageType.REGULAR };
 
   if (filters.destinationCountry) {
     where.destinationCountry = filters.destinationCountry;
@@ -47,7 +47,7 @@ export default async function RegularPackagesPage({
   }
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-    const priceConditions: any[] = [];
+    const priceConditions = [];
     if (filters.minPrice !== undefined) {
       priceConditions.push(
         { priceRangeMin: { gte: filters.minPrice } },
@@ -95,7 +95,7 @@ export default async function RegularPackagesPage({
   }
 
   // Build orderBy
-  let orderBy: any = { createdAt: "desc" };
+  let orderBy = { createdAt: "desc" };
   switch (filters.sortBy) {
     case "price_asc":
       orderBy = { priceRangeMin: "asc" };
@@ -116,12 +116,12 @@ export default async function RegularPackagesPage({
       orderBy = { createdAt: "desc" };
   }
 
-  let packages: any[] = [];
+  let packages = [];
   let total = 0;
-  let filterOptions: any = null;
+  let filterOptions = null;
 
   try {
-    const [packagesData, totalCount, filterOptionsData] = await Promise.all([
+    const [packagesData, totalCount, cachedFilterOptions] = await Promise.all([
       prisma.charterTravelPackage.findMany({
         where,
         skip: (page - 1) * limit,
@@ -138,24 +138,7 @@ export default async function RegularPackagesPage({
         },
       }),
       prisma.charterTravelPackage.count({ where }),
-      prisma.charterTravelPackage.findMany({
-        where: { isActive: true, type: PackageType.REGULAR },
-        select: {
-          destinationCountry: true,
-          destinationCity: true,
-          priceRangeMin: true,
-          priceRangeMax: true,
-          basePrice: true,
-          nights: true,
-          days: true,
-          hotelOptions: {
-            select: {
-              starRating: true,
-            },
-          },
-          type: true,
-        },
-      }),
+      getPackageFilterOptions(PackageType.REGULAR),
     ]);
 
     packages = packagesData.map((pkg) => ({
@@ -166,60 +149,8 @@ export default async function RegularPackagesPage({
       discount: pkg.discount ? Number(pkg.discount) : null,
     }));
     total = totalCount;
-
-    // Process filter options
-    const countries = Array.from(new Set(filterOptionsData.map((p) => p.destinationCountry))).sort();
-    const citiesByCountry: Record<string, string[]> = {};
-    filterOptionsData.forEach((p) => {
-      if (!citiesByCountry[p.destinationCountry]) {
-        citiesByCountry[p.destinationCountry] = [];
-      }
-      if (!citiesByCountry[p.destinationCountry].includes(p.destinationCity)) {
-        citiesByCountry[p.destinationCountry].push(p.destinationCity);
-      }
-    });
-
-    const allPrices = filterOptionsData
-      .flatMap((p) => [
-        p.priceRangeMin ? Number(p.priceRangeMin) : null,
-        p.priceRangeMax ? Number(p.priceRangeMax) : null,
-        p.basePrice ? Number(p.basePrice) : null,
-      ])
-      .filter((p): p is number => p !== null);
-
-    const allNights = filterOptionsData.map((p) => p.nights);
-    const allDays = filterOptionsData.map((p) => p.days);
-
-    const hotelRatings = Array.from(
-      new Set(
-        filterOptionsData
-          .flatMap((p) => p.hotelOptions.map((h) => h.starRating))
-          .filter((r): r is number => r !== null)
-      )
-    ).sort();
-
-    const packageTypes = Array.from(
-      new Set(filterOptionsData.map((pkg) => pkg.type))
-    ) as PackageType[];
-
-    filterOptions = {
-      countries,
-      cities: citiesByCountry,
-      priceRange: {
-        min: allPrices.length > 0 ? Math.min(...allPrices) : 0,
-        max: allPrices.length > 0 ? Math.max(...allPrices) : 100000,
-        currency: "EGP",
-      },
-      durationRange: {
-        minNights: allNights.length > 0 ? Math.min(...allNights) : 1,
-        maxNights: allNights.length > 0 ? Math.max(...allNights) : 30,
-        minDays: allDays.length > 0 ? Math.min(...allDays) : 1,
-        maxDays: allDays.length > 0 ? Math.max(...allDays) : 31,
-      },
-      hotelRatings,
-      packageTypes,
-    };
-  } catch (error: any) {
+    filterOptions = cachedFilterOptions;
+  } catch (error) {
     console.error("Database connection error:", error);
     packages = [];
     total = 0;

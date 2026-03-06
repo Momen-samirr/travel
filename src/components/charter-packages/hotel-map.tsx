@@ -22,9 +22,10 @@ interface HotelMapProps {
 export function HotelMap({ hotels }: HotelMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const mapInitializedRef = useRef(false);
+  const mapInstanceRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
+  const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   const validHotels = useMemo(
@@ -33,6 +34,15 @@ export function HotelMap({ hotels }: HotelMapProps) {
   );
 
   const validHotelsLength = validHotels.length;
+
+  const clearMapArtifacts = () => {
+    listenersRef.current.forEach((listener) => listener.remove());
+    listenersRef.current = [];
+    markersRef.current.forEach((marker) => marker.setMap(null));
+    markersRef.current = [];
+    mapInstanceRef.current = null;
+    mapInitializedRef.current = false;
+  };
 
   useEffect(() => {
     if (!apiKey || validHotelsLength === 0) return;
@@ -45,6 +55,12 @@ export function HotelMap({ hotels }: HotelMapProps) {
         });
     });
   }, [apiKey, validHotelsLength]);
+
+  useEffect(() => {
+    return () => {
+      clearMapArtifacts();
+    };
+  }, []);
 
   useEffect(() => {
     if (!mapLoaded || !mapRef.current || !window.google || validHotelsLength === 0) return;
@@ -60,6 +76,7 @@ export function HotelMap({ hotels }: HotelMapProps) {
     });
 
     const markerInstances: google.maps.Marker[] = [];
+    const listenerInstances: google.maps.MapsEventListener[] = [];
 
     validHotels.forEach((hotel) => {
       if (hotel.latitude && hotel.longitude) {
@@ -86,9 +103,10 @@ export function HotelMap({ hotels }: HotelMapProps) {
           `,
         });
 
-        marker.addListener("click", () => {
+        const clickListener = marker.addListener("click", () => {
           infoWindow.open(mapInstance, marker);
         });
+        listenerInstances.push(clickListener);
 
         markerInstances.push(marker);
       }
@@ -102,8 +120,9 @@ export function HotelMap({ hotels }: HotelMapProps) {
     }
 
     mapInitializedRef.current = true;
-    setMap(mapInstance);
-    setMarkers(markerInstances);
+    mapInstanceRef.current = mapInstance;
+    markersRef.current = markerInstances;
+    listenersRef.current = listenerInstances;
   }, [mapLoaded, validHotelsLength]); // Only primitive values for stable dependency array
 
   if (!apiKey) {

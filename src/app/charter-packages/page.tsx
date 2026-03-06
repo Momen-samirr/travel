@@ -3,6 +3,7 @@ import { Package } from "lucide-react";
 import { CharterPackagesPageContent } from "@/components/charter-packages/CharterPackagesPageContent";
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
 import { PackageType } from "@/services/packages/types";
+import { getPackageFilterOptions } from "@/lib/package-filter-options";
 
 export const metadata = {
   title: "Charter Travel Packages",
@@ -37,7 +38,7 @@ export default async function CharterPackagesPage({
   const limit = Number(filters.limit) || 12;
 
   // Build where clause (same logic as API)
-  const where: any = { isActive: true, type: PackageType.CHARTER };
+  const where = { isActive: true, type: PackageType.CHARTER };
 
   if (filters.destinationCountry) {
     where.destinationCountry = filters.destinationCountry;
@@ -47,7 +48,7 @@ export default async function CharterPackagesPage({
   }
 
   if (filters.minPrice !== undefined || filters.maxPrice !== undefined) {
-    const priceConditions: any[] = [];
+    const priceConditions = [];
     if (filters.minPrice !== undefined) {
       priceConditions.push(
         { priceRangeMin: { gte: filters.minPrice } },
@@ -104,7 +105,7 @@ export default async function CharterPackagesPage({
   }
 
   // Build orderBy
-  let orderBy: any = { createdAt: "desc" };
+  let orderBy = { createdAt: "desc" };
   switch (filters.sortBy) {
     case "price_asc":
       orderBy = { priceRangeMin: "asc" };
@@ -125,12 +126,12 @@ export default async function CharterPackagesPage({
       orderBy = { createdAt: "desc" };
   }
 
-  let packages: any[] = [];
+  let packages = [];
   let total = 0;
-  let filterOptions: any = null;
+  let filterOptions = null;
 
   try {
-    const [packagesData, totalCount, filterOptionsData] = await Promise.all([
+    const [packagesData, totalCount, cachedFilterOptions] = await Promise.all([
       prisma.charterTravelPackage.findMany({
         where,
         skip: (page - 1) * limit,
@@ -147,24 +148,7 @@ export default async function CharterPackagesPage({
         },
       }),
       prisma.charterTravelPackage.count({ where }),
-      // Fetch filter options
-      prisma.charterTravelPackage.findMany({
-        where: { isActive: true },
-        select: {
-          destinationCountry: true,
-          destinationCity: true,
-          priceRangeMin: true,
-          priceRangeMax: true,
-          basePrice: true,
-          nights: true,
-          days: true,
-          type: true,
-          hotelOptions: {
-            where: { isActive: true },
-            select: { starRating: true },
-          },
-        },
-      }),
+      getPackageFilterOptions(PackageType.CHARTER),
     ]);
 
     packages = packagesData.map((pkg) => ({
@@ -175,71 +159,8 @@ export default async function CharterPackagesPage({
       discount: pkg.discount ? Number(pkg.discount) : null,
     }));
     total = totalCount;
-
-    // Process filter options
-    const countries = Array.from(
-      new Set(filterOptionsData.map((pkg) => pkg.destinationCountry))
-    ).sort();
-
-    const citiesByCountry: Record<string, string[]> = {};
-    filterOptionsData.forEach((pkg) => {
-      if (!citiesByCountry[pkg.destinationCountry]) {
-        citiesByCountry[pkg.destinationCountry] = [];
-      }
-      if (!citiesByCountry[pkg.destinationCountry].includes(pkg.destinationCity)) {
-        citiesByCountry[pkg.destinationCountry].push(pkg.destinationCity);
-      }
-    });
-
-    Object.keys(citiesByCountry).forEach((country) => {
-      citiesByCountry[country].sort();
-    });
-
-    const prices = filterOptionsData
-      .map((pkg) => [
-        pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
-        pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-        pkg.basePrice ? Number(pkg.basePrice) : null,
-      ])
-      .flat()
-      .filter((price): price is number => price !== null);
-
-    const nights = filterOptionsData.map((pkg) => pkg.nights);
-    const days = filterOptionsData.map((pkg) => pkg.days);
-
-    const hotelRatings = Array.from(
-      new Set(
-        filterOptionsData
-          .flatMap((pkg) =>
-            pkg.hotelOptions
-              .map((opt) => opt.starRating)
-              .filter((rating): rating is number => rating !== null)
-          )
-      )
-    ).sort();
-
-        const packageTypes = Array.from(
-          new Set(filterOptionsData.map((pkg) => pkg.type))
-        ) as PackageType[];
-
-    filterOptions = {
-      countries,
-      cities: citiesByCountry,
-      priceRange: {
-        min: prices.length > 0 ? Math.min(...prices) : 0,
-        max: prices.length > 0 ? Math.max(...prices) : 100000,
-        currency: "EGP",
-      },
-      durationRange: {
-        minNights: nights.length > 0 ? Math.min(...nights) : 3,
-        maxNights: nights.length > 0 ? Math.max(...nights) : 21,
-        minDays: days.length > 0 ? Math.min(...days) : 4,
-        maxDays: days.length > 0 ? Math.max(...days) : 22,
-      },
-      hotelRatings,
-      packageTypes,
-    };
-  } catch (error: any) {
+    filterOptions = cachedFilterOptions;
+  } catch (error) {
     console.error("Database connection error:", error);
     packages = [];
     total = 0;
@@ -247,7 +168,7 @@ export default async function CharterPackagesPage({
 
   return (
     <div className="flex flex-col min-h-screen">
-      <section className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white py-16 md:py-20">
+      <section className="relative bg-linear-to-br from-primary via-primary/90 to-primary/80 text-white py-16 md:py-20">
         <div className="absolute inset-0 bg-[url('/api/placeholder/1920/600')] bg-cover bg-center opacity-10"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">

@@ -10,6 +10,7 @@ export default function FlightsPage() {
     origin: string;
     destination: string;
     departureDate: string;
+    tripType: "oneway" | "round";
     returnDate?: string;
     adults: number;
     children: number;
@@ -21,19 +22,20 @@ export default function FlightsPage() {
       destination: params.destination,
       departureDate: params.departureDate,
       returnDate: params.returnDate,
-      tripType: params.returnDate ? "round" : "oneway",
+      tripType: params.tripType,
       travelClass: params.travelClass,
       adults: params.adults,
       children: params.children,
       infants: params.infants,
     });
+    console.log("[FlightsPage] Redirecting to AOS URL:", url);
     window.location.href = url;
   };
 
   return (
     <div className="flex flex-col min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-white py-16 md:py-24">
+      <section className="relative bg-linear-to-br from-primary via-primary/90 to-primary/80 text-white py-16 md:py-24">
         <div className="absolute inset-0 bg-[url('/api/placeholder/1920/600')] bg-cover bg-center opacity-10"></div>
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
@@ -56,7 +58,7 @@ export default function FlightsPage() {
           <Card className="shadow-2xl border-0">
             <CardContent className="p-6 md:p-8">
               <p className="flex items-center gap-2 text-sm text-muted-foreground mb-6 rounded-md bg-muted/50 p-3">
-                <ExternalLink className="h-4 w-4 flex-shrink-0" />
+                <ExternalLink className="h-4 w-4 shrink-0" />
                 You will be redirected to our flight booking partner to search and book. Flight search on this site uses a redirect-only integration (no Amadeus API).
               </p>
               <FlightSearchForm onSearch={handleRedirectToSearch} loading={false} />

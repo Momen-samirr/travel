@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ const commonAmenities = [
 export function HotelFiltersSidebar({ onFiltersChange }: HotelFiltersSidebarProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchParamsKey = searchParams.toString();
 
   // Price filter
   const [priceRange, setPriceRange] = useState<[number, number]>([
@@ -64,25 +65,25 @@ export function HotelFiltersSidebar({ onFiltersChange }: HotelFiltersSidebarProp
   // Hotel name search
   const [searchQuery, setSearchQuery] = useState(searchParams.get("searchQuery") || "");
 
-  // Use refs to track if this is the initial mount and prevent loops
-  const isInitialMount = useRef(true);
+  // Use refs to avoid URL/state feedback loops.
+  const hasHydratedFromUrl = useRef(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const isUpdatingFromURL = useRef(false);
+  const lastAppliedQuery = useRef("");
 
-  // Sync state from URL params when URL changes (but not from our own updates)
+  const sortNumberArray = (arr: number[]) => [...arr].sort((a, b) => a - b);
+  const sortStringArray = (arr: string[]) => [...arr].sort((a, b) => a.localeCompare(b));
+  const areNumberArraysEqual = (a: number[], b: number[]) =>
+    JSON.stringify(sortNumberArray(a)) === JSON.stringify(sortNumberArray(b));
+  const areStringArraysEqual = (a: string[], b: string[]) =>
+    JSON.stringify(sortStringArray(a)) === JSON.stringify(sortStringArray(b));
+
+  // Sync state from URL params when URL changes.
   useEffect(() => {
-    if (isUpdatingFromURL.current) {
-      isUpdatingFromURL.current = false;
-      return;
+    if (lastAppliedQuery.current === searchParamsKey) {
+      lastAppliedQuery.current = "";
     }
 
-    // Only sync on initial mount or when URL changes externally
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-
-    // Sync state from URL (only if URL changed externally, not from our updates)
+    // Sync state from URL (for initial mount and external URL updates)
     const urlMinPrice = parseInt(searchParams.get("minPrice") || "0");
     const urlMaxPrice = parseInt(searchParams.get("maxPrice") || "50000");
     const urlRatings = searchParams.get("ratings")?.split(",").map(Number) || [];
@@ -96,26 +97,27 @@ export function HotelFiltersSidebar({ onFiltersChange }: HotelFiltersSidebarProp
     if (priceRange[0] !== urlMinPrice || priceRange[1] !== urlMaxPrice) {
       setPriceRange([urlMinPrice, urlMaxPrice]);
     }
-    if (JSON.stringify(selectedRatings.sort()) !== JSON.stringify(urlRatings.sort())) {
+    if (!areNumberArraysEqual(selectedRatings, urlRatings)) {
       setSelectedRatings(urlRatings);
     }
     if (reviewScoreRange[0] !== urlMinReview || reviewScoreRange[1] !== urlMaxReview) {
       setReviewScoreRange([urlMinReview, urlMaxReview]);
     }
-    if (JSON.stringify(selectedAmenities.sort()) !== JSON.stringify(urlAmenities.sort())) {
+    if (!areStringArraysEqual(selectedAmenities, urlAmenities)) {
       setSelectedAmenities(urlAmenities);
     }
-    if (JSON.stringify(selectedSources.sort()) !== JSON.stringify(urlSources.sort())) {
+    if (!areStringArraysEqual(selectedSources, urlSources)) {
       setSelectedSources(urlSources);
     }
     if (searchQuery !== urlSearchQuery) {
       setSearchQuery(urlSearchQuery);
     }
-  }, [searchParams]); // Depend on searchParams object, but use .toString() inside
+    hasHydratedFromUrl.current = true;
+  }, [searchParamsKey]); // Depend on string key to avoid object identity churn.
 
-  // Update URL when filters change (but skip initial mount and URL syncs)
+  // Update URL when filters change.
   useEffect(() => {
-    if (isInitialMount.current || isUpdatingFromURL.current) {
+    if (!hasHydratedFromUrl.current) {
       return;
     }
 
@@ -124,8 +126,7 @@ export function HotelFiltersSidebar({ onFiltersChange }: HotelFiltersSidebarProp
     }
 
     timeoutRef.current = setTimeout(() => {
-      isUpdatingFromURL.current = true; // Mark that we're updating URL
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParamsKey);
 
       // Preserve search params (city, dates, etc.)
       // Only update filter params
@@ -170,13 +171,11 @@ export function HotelFiltersSidebar({ onFiltersChange }: HotelFiltersSidebarProp
         params.delete("searchQuery");
       }
 
-      // Update URL using router.replace to properly update Next.js state
-      router.replace(`/hotels/search?${params.toString()}`, { scroll: false });
-
-      // Reset flag after a short delay to allow URL to update
-      setTimeout(() => {
-        isUpdatingFromURL.current = false;
-      }, 100);
+      const nextQuery = params.toString();
+      if (nextQuery !== searchParamsKey) {
+        lastAppliedQuery.current = nextQuery;
+        router.replace(`/hotels/search?${nextQuery}`, { scroll: false });
+      }
 
       // Notify parent component
       if (onFiltersChange) {
@@ -208,7 +207,7 @@ export function HotelFiltersSidebar({ onFiltersChange }: HotelFiltersSidebarProp
     searchQuery,
     router,
     onFiltersChange,
-    // Don't include searchParams here - it causes the loop
+    searchParamsKey,
   ]);
 
   const toggleRating = (rating: number) => {

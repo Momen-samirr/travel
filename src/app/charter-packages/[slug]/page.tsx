@@ -433,11 +433,11 @@ export default async function CharterPackageDetailPage({
               <DynamicBookingForm
                 packageData={{
                   id: pkg.id,
-                  basePrice: pkg.basePrice,
-                  priceRangeMin: pkg.priceRangeMin,
-                  priceRangeMax: pkg.priceRangeMax,
+                  basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
+                  priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
+                  priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
                   currency: pkg.currency,
-                  discount: pkg.discount,
+                  discount: pkg.discount ? Number(pkg.discount) : null,
                   hotelOptions: pkg.hotelOptions.map((opt) => ({
                     id: opt.id,
                     hotel: {
@@ -449,8 +449,16 @@ export default async function CharterPackageDetailPage({
                     starRating: opt.starRating,
                     bookingRating: opt.bookingRating,
                   })),
-                  departureOptions: pkg.departureOptions,
-                  addons: pkg.addons,
+                  departureOptions: pkg.departureOptions.map((option) => ({
+                    ...option,
+                    priceModifier: option.priceModifier
+                      ? Number(option.priceModifier)
+                      : null,
+                  })),
+                  addons: pkg.addons.map((addon) => ({
+                    ...addon,
+                    price: Number(addon.price),
+                  })),
                 }}
               />
             </CardContent>

@@ -21,8 +21,30 @@ export function HotelMapView({
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [infoWindows, setInfoWindows] = useState<google.maps.InfoWindow[]>([]);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const listenersRef = useRef<google.maps.MapsEventListener[]>([]);
+  const infoWindowsRef = useRef<google.maps.InfoWindow[]>([]);
+  const buttonTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const bounceTimeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const isMountedRef = useRef(true);
+
+  const clearMapArtifacts = () => {
+    listenersRef.current.forEach((listener) => listener.remove());
+    listenersRef.current = [];
+    infoWindowsRef.current.forEach((iw) => iw.close());
+    infoWindowsRef.current = [];
+    markers.forEach((marker) => {
+      marker.setAnimation(null);
+      marker.setMap(null);
+    });
+    buttonTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+    buttonTimeoutsRef.current = [];
+    bounceTimeoutsRef.current.forEach((timeout) => clearTimeout(timeout));
+    bounceTimeoutsRef.current = [];
+    if (isMountedRef.current) {
+      setMarkers([]);
+    }
+  };
 
   // Load Google Maps script
   useEffect(() => {
@@ -40,9 +62,17 @@ export function HotelMapView({
     });
   }, [apiKey]);
 
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      clearMapArtifacts();
+    };
+  }, []);
+
   // Initialize map
   const initializeMap = () => {
     if (!mapRef.current || !window.google) return;
+    clearMapArtifacts();
 
     const hotelsWithCoords = hotels.filter(
       (h) => h.latitude !== null && h.longitude !== null
@@ -104,31 +134,35 @@ export function HotelMapView({
         `,
       });
 
-      marker.addListener("click", () => {
+      const markerClickListener = marker.addListener("click", () => {
         // Close all info windows
         infoWindowInstances.forEach((iw) => iw.close());
         infoWindow.open(mapInstance, marker);
         onHotelClick?.(hotel);
       });
+      listenersRef.current.push(markerClickListener);
 
       // Add click listener to button in info window
-      marker.addListener("click", () => {
-        setTimeout(() => {
+      const infoButtonListener = marker.addListener("click", () => {
+        const timeout = setTimeout(() => {
+          if (!isMountedRef.current) return;
           const button = document.getElementById(`hotel-${hotel.id}`);
           if (button) {
-            button.addEventListener("click", () => {
+            button.onclick = () => {
               onHotelClick?.(hotel);
-            });
+            };
           }
         }, 100);
+        buttonTimeoutsRef.current.push(timeout);
       });
+      listenersRef.current.push(infoButtonListener);
 
       markerInstances.push(marker);
       infoWindowInstances.push(infoWindow);
     });
 
+    infoWindowsRef.current = infoWindowInstances;
     setMarkers(markerInstances);
-    setInfoWindows(infoWindowInstances);
   };
 
   // Update markers when hotels or selectedHotelId changes
@@ -141,9 +175,11 @@ export function HotelMapView({
 
       if (selectedHotelId === hotel.id) {
         marker.setAnimation(window.google.maps.Animation.BOUNCE);
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
+          if (!isMountedRef.current) return;
           marker.setAnimation(null);
         }, 2000);
+        bounceTimeoutsRef.current.push(timeout);
         
         // Center map on selected hotel
         if (hotel.latitude && hotel.longitude) {

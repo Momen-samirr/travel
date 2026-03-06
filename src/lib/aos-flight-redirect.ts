@@ -5,6 +5,10 @@
  */
 
 const AOS_FLIGHT_SEARCH_PATH = "/flight/search";
+const AOS_TRIPTYPE_ONEWAY = process.env.NEXT_PUBLIC_AOS_TRIPTYPE_ONEWAY || "1";
+const AOS_TRIPTYPE_ROUND = process.env.NEXT_PUBLIC_AOS_TRIPTYPE_ROUND || "2";
+const AOS_SEARCH_KEY_ONEWAY = process.env.NEXT_PUBLIC_AOS_SEARCH_KEY_ONEWAY || "OW";
+const AOS_SEARCH_KEY_ROUND = process.env.NEXT_PUBLIC_AOS_SEARCH_KEY_ROUND || "IRT";
 
 const MONTHS: string[] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -55,7 +59,7 @@ export function buildAosFlightSearchUrl(params: AosFlightSearchParams): string {
   const origin = params.origin.trim().toUpperCase();
   const destination = params.destination.trim().toUpperCase();
   const cabin = toAosCabinCode(params.travelClass);
-  const isRound = params.tripType === "round" && params.returnDate;
+  const isRoundTrip = params.tripType === "round" && Boolean(params.returnDate);
 
   // Leg 1 (outbound)
   searchParams.set("dep1", origin);
@@ -64,14 +68,17 @@ export function buildAosFlightSearchUrl(params: AosFlightSearchParams): string {
   searchParams.set("cl1", cabin);
 
   // Leg 2 (return) – only for round trip
-  if (isRound && params.returnDate) {
+  if (isRoundTrip && params.returnDate) {
     searchParams.set("dep2", destination);
     searchParams.set("ret2", origin);
     searchParams.set("dtt2", formatAosDate(params.returnDate));
     searchParams.set("cl2", cabin);
   }
 
-  searchParams.set("triptype", isRound ? "2" : "1");
+  searchParams.set(
+    "triptype",
+    params.tripType === "round" ? AOS_TRIPTYPE_ROUND : AOS_TRIPTYPE_ONEWAY,
+  );
   searchParams.set("adult", String(params.adults));
   searchParams.set("child", String(params.children ?? 0));
   searchParams.set("infant", String(params.infants ?? 0));
@@ -80,7 +87,10 @@ export function buildAosFlightSearchUrl(params: AosFlightSearchParams): string {
   searchParams.set("direct", "false");
   searchParams.set("baggage", "false");
   searchParams.set("pft", "");
-  searchParams.set("key", "IRT");
+  searchParams.set(
+    "key",
+    params.tripType === "round" ? AOS_SEARCH_KEY_ROUND : AOS_SEARCH_KEY_ONEWAY,
+  );
   searchParams.set("airlines", "");
   searchParams.set("ref", "false");
   searchParams.set("ipc", "false");

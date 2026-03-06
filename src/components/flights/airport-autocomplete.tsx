@@ -39,12 +39,29 @@ export function AirportAutocomplete({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
   const [isTyping, setIsTyping] = useState(false);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const blurTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeSearchControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (blurTimeoutRef.current) {
+        clearTimeout(blurTimeoutRef.current);
+      }
+      if (activeSearchControllerRef.current) {
+        activeSearchControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   // Initialize query from value prop only if value is empty or we don't have a selected airport
   useEffect(() => {
@@ -102,23 +119,38 @@ export function AirportAutocomplete({
     }
 
     timeoutRef.current = setTimeout(async () => {
+      if (activeSearchControllerRef.current) {
+        activeSearchControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      activeSearchControllerRef.current = controller;
       setLoading(true);
       try {
-        const response = await fetch(`/api/airports?q=${encodeURIComponent(query)}`);
+        const response = await fetch(
+          `/api/airports?q=${encodeURIComponent(query)}`,
+          { signal: controller.signal }
+        );
         if (response.ok) {
           const data = await response.json();
+          if (!isMountedRef.current) return;
           setAirports(data.locations || []);
           setOpen(true);
           setSelectedIndex(-1);
         } else {
+          if (!isMountedRef.current) return;
           setAirports([]);
           setOpen(false);
         }
       } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") {
+          return;
+        }
+        if (!isMountedRef.current) return;
         console.error("Error fetching airports:", error);
         setAirports([]);
         setOpen(false);
       } finally {
+        if (!isMountedRef.current) return;
         setLoading(false);
       }
     }, 300);
@@ -134,7 +166,7 @@ export function AirportAutocomplete({
     const displayValue = airport.cityName
       ? `${airport.cityName} (${airport.iataCode})`
       : `${airport.name} (${airport.iataCode})`;
-    
+
     setSelectedAirport(airport);
     setQuery(displayValue);
     setIsTyping(false);
@@ -142,7 +174,7 @@ export function AirportAutocomplete({
     onSelect(airport);
     setOpen(false);
     setSelectedIndex(-1);
-    
+
     // Focus back on input
     inputRef.current?.focus();
   };
@@ -151,13 +183,13 @@ export function AirportAutocomplete({
     const newQuery = e.target.value;
     setQuery(newQuery);
     setIsTyping(true);
-    
+
     // Clear selection if user is typing something different
     if (selectedAirport) {
       const displayValue = selectedAirport.cityName
         ? `${selectedAirport.cityName} (${selectedAirport.iataCode})`
         : `${selectedAirport.name} (${selectedAirport.iataCode})`;
-      
+
       if (newQuery !== displayValue) {
         setSelectedAirport(null);
         onChange("");
@@ -189,7 +221,9 @@ export function AirportAutocomplete({
     switch (e.key) {
       case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex((prev) => (prev < airports.length - 1 ? prev + 1 : prev));
+        setSelectedIndex((prev) =>
+          prev < airports.length - 1 ? prev + 1 : prev,
+        );
         break;
       case "ArrowUp":
         e.preventDefault();
@@ -208,6 +242,10 @@ export function AirportAutocomplete({
   };
 
   const handleFocus = () => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current);
+      blurTimeoutRef.current = null;
+    }
     // If we have airports from previous search, show them
     if (airports.length > 0) {
       setOpen(true);
@@ -236,7 +274,10 @@ export function AirportAutocomplete({
   // Click outside handler
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
         setSelectedIndex(-1);
         setIsTyping(false);
@@ -248,6 +289,9 @@ export function AirportAutocomplete({
       document.removeEventListener("mousedown", handleClickOutside);
       if (blurTimeoutRef.current) {
         clearTimeout(blurTimeoutRef.current);
+      }
+      if (activeSearchControllerRef.current) {
+        activeSearchControllerRef.current.abort();
       }
     };
   }, []);
@@ -274,19 +318,14 @@ export function AirportAutocomplete({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
-          className={cn(
-            "pl-10",
-            error && "border-destructive"
-          )}
+          className={cn("pl-10", error && "border-destructive")}
         />
         {loading && (
           <Loader2 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
         )}
       </div>
 
-      {error && (
-        <p className="mt-1 text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-destructive">{error}</p>}
 
       {open && airports.length > 0 && (
         <ul
@@ -300,7 +339,7 @@ export function AirportAutocomplete({
               onClick={() => handleSelect(airport)}
               className={cn(
                 "px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors",
-                index === selectedIndex && "bg-gray-100"
+                index === selectedIndex && "bg-gray-100",
               )}
             >
               <div className="flex items-center justify-between">
@@ -309,7 +348,9 @@ export function AirportAutocomplete({
                     {airport.cityName || airport.name}
                   </div>
                   <div className="text-sm text-gray-500">
-                    {airport.name !== airport.cityName && airport.cityName && `${airport.name}, `}
+                    {airport.name !== airport.cityName &&
+                      airport.cityName &&
+                      `${airport.name}, `}
                     {airport.countryName}
                   </div>
                 </div>

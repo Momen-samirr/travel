@@ -1,10 +1,9 @@
-import { prisma } from "@/lib/prisma";
-import { Package } from "lucide-react";
-import { StaggerList } from "@/components/motion/stagger-list";
-import { PackageCard } from "@/components/packages/shared/PackageCard";
 import { PackageType } from "@/services/packages/types";
 import { PackagesPageContent } from "@/components/packages/PackagesPageContent";
 import { Metadata } from "next";
+import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
+import { unifiedPackageService } from "@/services/packages/unified/UnifiedPackageService";
+import { getPackageFilterOptions } from "@/lib/package-filter-options";
 
 export const metadata: Metadata = {
   title: "Travel Packages",
@@ -16,60 +15,63 @@ export default async function PackagesPage({
 }: {
   searchParams: Promise<{
     page?: string;
+    packageType?: string;
     type?: string;
     destinationCountry?: string;
     destinationCity?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    minNights?: string;
+    maxNights?: string;
+    minDays?: string;
+    maxDays?: string;
+    departureDateFrom?: string;
+    departureDateTo?: string;
+    hotelRating?: string;
+    sortBy?: string;
   }>;
 }) {
   const params = await searchParams;
-  const page = parseInt(params.page || "1");
-  const limit = 12;
+  const normalizedPackageType =
+    params.packageType ||
+    (params.type ? params.type.toUpperCase() : undefined);
+  const filters = charterPackageFiltersSchema.parse({
+    ...params,
+    packageType: normalizedPackageType,
+  });
 
-  const where: any = { isActive: true };
-  
-  // Filter by type if provided
-  if (params.type) {
-    where.type = params.type.toUpperCase() as PackageType;
-  }
-  
-  if (params.destinationCountry) {
-    where.destinationCountry = params.destinationCountry;
-  }
-  if (params.destinationCity) {
-    where.destinationCity = params.destinationCity;
-  }
-
-  let packages: any[] = [];
+  let packages = [];
   let total = 0;
+  let page = Number(filters.page) || 1;
+  const limit = Number(filters.limit) || 12;
+  let filterOptions = null;
 
   try {
-    const [packagesData, totalCount] = await Promise.all([
-      prisma.charterTravelPackage.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          _count: {
-            select: {
-              departureOptions: true,
-              hotelOptions: true,
-            },
-          },
-        },
+    const [result, cachedFilterOptions] = await Promise.all([
+      unifiedPackageService.searchPackages({
+        type: filters.packageType,
+        destinationCountry: filters.destinationCountry,
+        destinationCity: filters.destinationCity,
+        minPrice: filters.minPrice,
+        maxPrice: filters.maxPrice,
+        minNights: filters.minNights,
+        maxNights: filters.maxNights,
+        minDays: filters.minDays,
+        maxDays: filters.maxDays,
+        departureDateFrom: filters.departureDateFrom,
+        departureDateTo: filters.departureDateTo,
+        hotelRating: filters.hotelRating,
+        page: filters.page,
+        pageSize: filters.limit,
       }),
-      prisma.charterTravelPackage.count({ where }),
+      getPackageFilterOptions(filters.packageType),
     ]);
 
-    packages = packagesData.map((pkg) => ({
-      ...pkg,
-      basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
-      priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
-      priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-      discount: pkg.discount ? Number(pkg.discount) : null,
-    }));
-    total = totalCount;
-  } catch (error: any) {
+    packages = result.packages;
+    total = result.total;
+    page = result.page;
+    filterOptions = cachedFilterOptions;
+  } catch (error) {
     console.error("Database connection error:", error);
     packages = [];
     total = 0;
@@ -81,7 +83,8 @@ export default async function PackagesPage({
       total={total}
       page={page}
       limit={limit}
-      selectedType={params.type as PackageType | undefined}
+      selectedType={filters.packageType as PackageType | undefined}
+      initialFilterOptions={filterOptions ?? undefined}
     />
   );
 }
