@@ -17,6 +17,7 @@ const navLinks = [
   { href: "/inbound-packages", label: "Inbound Packages" },
   { href: "/regular-packages", label: "Regular Packages" },
   { href: "/blogs", label: "Blogs" },
+  { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
 

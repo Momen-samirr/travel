@@ -3,12 +3,12 @@ import {
   Plane,
   Luggage,
   Facebook,
-  Twitter,
   Instagram,
-  Mail,
-  PhoneIcon,
   Phone,
+  Linkedin,
 } from "lucide-react";
+
+import { FaTiktok } from "react-icons/fa";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -38,6 +38,7 @@ export function Footer() {
                 href="https://www.facebook.com/Eshtyaqq?rdid=hOuKQEQ16u3FzDn0&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1BqYf43yob%2F#"
                 className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
                 aria-label="Facebook"
+                target="_blank"
               >
                 <Facebook className="h-5 w-5" />
               </a>
@@ -45,6 +46,7 @@ export function Footer() {
                 href="https://whatsapp.com/channel/0029VaHvGNmHgZWUMmaGWD0v"
                 className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
                 aria-label="Twitter"
+                target="_blank"
               >
                 <Phone className="h-5 w-5" />
               </a>
@@ -52,8 +54,25 @@ export function Footer() {
                 href="https://www.instagram.com/tishoury_tours/"
                 className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
                 aria-label="Instagram"
+                target="_blank"
               >
                 <Instagram className="h-5 w-5" />
+              </a>
+              <a
+                href="https://www.linkedin.com/company/tishoury-tours-eg/?viewAsMember=true"
+                className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
+                aria-label="linkedin"
+                target="_blank"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a
+                href="https://www.tiktok.com/@tishoury_eg"
+                className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
+                aria-label="tiktok"
+                target="_blank"
+              >
+                <FaTiktok className="h-5 w-5" />
               </a>
             </div>
           </div>
