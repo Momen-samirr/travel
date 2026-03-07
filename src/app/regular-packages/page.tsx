@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { CharterPackagesPageContent } from "@/components/charter-packages/CharterPackagesPageContent";
+import type { PackageData } from "@/components/charter-packages/CharterPackagesPageContent";
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
 import { PackageType } from "@/services/packages/types";
 import { getPackageFilterOptions } from "@/lib/package-filter-options";
@@ -37,7 +39,10 @@ export default async function RegularPackagesPage({
   const limit = Number(filters.limit) || 12;
 
   // Build where clause - filter by REGULAR type only
-  const where = { isActive: true, type: PackageType.REGULAR };
+  const where: Prisma.CharterTravelPackageWhereInput = {
+    isActive: true,
+    type: PackageType.REGULAR,
+  };
 
   if (filters.destinationCountry) {
     where.destinationCountry = filters.destinationCountry;
@@ -60,21 +65,23 @@ export default async function RegularPackagesPage({
         { basePrice: { lte: filters.maxPrice } }
       );
     }
-    where.OR = priceConditions;
+    if (priceConditions.length > 0) {
+      where.OR = priceConditions;
+    }
   }
 
-  if (filters.minNights !== undefined) {
-    where.nights = { ...where.nights, gte: filters.minNights };
-  }
-  if (filters.maxNights !== undefined) {
-    where.nights = { ...where.nights, lte: filters.maxNights };
+  if (filters.minNights !== undefined || filters.maxNights !== undefined) {
+    where.nights = {
+      ...(filters.minNights !== undefined ? { gte: filters.minNights } : {}),
+      ...(filters.maxNights !== undefined ? { lte: filters.maxNights } : {}),
+    };
   }
 
-  if (filters.minDays !== undefined) {
-    where.days = { ...where.days, gte: filters.minDays };
-  }
-  if (filters.maxDays !== undefined) {
-    where.days = { ...where.days, lte: filters.maxDays };
+  if (filters.minDays !== undefined || filters.maxDays !== undefined) {
+    where.days = {
+      ...(filters.minDays !== undefined ? { gte: filters.minDays } : {}),
+      ...(filters.maxDays !== undefined ? { lte: filters.maxDays } : {}),
+    };
   }
 
   if (filters.departureDateFrom || filters.departureDateTo) {
@@ -95,7 +102,9 @@ export default async function RegularPackagesPage({
   }
 
   // Build orderBy
-  let orderBy = { createdAt: "desc" };
+  let orderBy: Prisma.CharterTravelPackageOrderByWithRelationInput = {
+    createdAt: "desc",
+  };
   switch (filters.sortBy) {
     case "price_asc":
       orderBy = { priceRangeMin: "asc" };
@@ -116,9 +125,9 @@ export default async function RegularPackagesPage({
       orderBy = { createdAt: "desc" };
   }
 
-  let packages = [];
+  let packages: PackageData[] = [];
   let total = 0;
-  let filterOptions = null;
+  let filterOptions: Awaited<ReturnType<typeof getPackageFilterOptions>> | null = null;
 
   try {
     const [packagesData, totalCount, cachedFilterOptions] = await Promise.all([
@@ -169,7 +178,7 @@ export default async function RegularPackagesPage({
       initialPackages={packages}
       initialTotal={total}
       initialPage={page}
-      initialFilterOptions={filterOptions}
+      initialFilterOptions={filterOptions ?? undefined}
     />
   );
 }

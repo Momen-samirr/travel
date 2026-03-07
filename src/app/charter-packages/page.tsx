@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { Package } from "lucide-react";
 import { CharterPackagesPageContent } from "@/components/charter-packages/CharterPackagesPageContent";
+import type { PackageData } from "@/components/charter-packages/CharterPackagesPageContent";
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
 import { PackageType } from "@/services/packages/types";
 import { getPackageFilterOptions } from "@/lib/package-filter-options";
@@ -38,7 +40,10 @@ export default async function CharterPackagesPage({
   const limit = Number(filters.limit) || 12;
 
   // Build where clause (same logic as API)
-  const where = { isActive: true, type: PackageType.CHARTER };
+  const where: Prisma.CharterTravelPackageWhereInput = {
+    isActive: true,
+    type: PackageType.CHARTER,
+  };
 
   if (filters.destinationCountry) {
     where.destinationCountry = filters.destinationCountry;
@@ -66,17 +71,18 @@ export default async function CharterPackagesPage({
     }
   }
 
-  if (filters.minNights !== undefined) {
-    where.nights = { gte: filters.minNights };
+  if (filters.minNights !== undefined || filters.maxNights !== undefined) {
+    where.nights = {
+      ...(filters.minNights !== undefined ? { gte: filters.minNights } : {}),
+      ...(filters.maxNights !== undefined ? { lte: filters.maxNights } : {}),
+    };
   }
-  if (filters.maxNights !== undefined) {
-    where.nights = { ...where.nights, lte: filters.maxNights };
-  }
-  if (filters.minDays !== undefined) {
-    where.days = { gte: filters.minDays };
-  }
-  if (filters.maxDays !== undefined) {
-    where.days = { ...where.days, lte: filters.maxDays };
+
+  if (filters.minDays !== undefined || filters.maxDays !== undefined) {
+    where.days = {
+      ...(filters.minDays !== undefined ? { gte: filters.minDays } : {}),
+      ...(filters.maxDays !== undefined ? { lte: filters.maxDays } : {}),
+    };
   }
 
   if (filters.departureDateFrom || filters.departureDateTo) {
@@ -105,7 +111,9 @@ export default async function CharterPackagesPage({
   }
 
   // Build orderBy
-  let orderBy = { createdAt: "desc" };
+  let orderBy: Prisma.CharterTravelPackageOrderByWithRelationInput = {
+    createdAt: "desc",
+  };
   switch (filters.sortBy) {
     case "price_asc":
       orderBy = { priceRangeMin: "asc" };
@@ -126,9 +134,9 @@ export default async function CharterPackagesPage({
       orderBy = { createdAt: "desc" };
   }
 
-  let packages = [];
+  let packages: PackageData[] = [];
   let total = 0;
-  let filterOptions = null;
+  let filterOptions: Awaited<ReturnType<typeof getPackageFilterOptions>> | null = null;
 
   try {
     const [packagesData, totalCount, cachedFilterOptions] = await Promise.all([
@@ -189,7 +197,7 @@ export default async function CharterPackagesPage({
         initialPackages={packages}
         initialTotal={total}
         initialPage={page}
-        initialFilterOptions={filterOptions}
+        initialFilterOptions={filterOptions ?? undefined}
       />
     </div>
   );

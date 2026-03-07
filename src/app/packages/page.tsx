@@ -1,4 +1,5 @@
 import { PackageType } from "@/services/packages/types";
+import type { TravelPackage } from "@/services/packages/types";
 import { PackagesPageContent } from "@/components/packages/PackagesPageContent";
 import { Metadata } from "next";
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
@@ -40,11 +41,11 @@ export default async function PackagesPage({
     packageType: normalizedPackageType,
   });
 
-  let packages = [];
+  let packages: TravelPackage[] = [];
   let total = 0;
   let page = Number(filters.page) || 1;
   const limit = Number(filters.limit) || 12;
-  let filterOptions = null;
+  let filterOptions: Awaited<ReturnType<typeof getPackageFilterOptions>> | null = null;
 
   try {
     const [result, cachedFilterOptions] = await Promise.all([
@@ -69,7 +70,7 @@ export default async function PackagesPage({
 
     packages = result.packages;
     total = result.total;
-    page = result.page;
+    page = result.page ?? 1;
     filterOptions = cachedFilterOptions;
   } catch (error) {
     console.error("Database connection error:", error);

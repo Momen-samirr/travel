@@ -23,11 +23,11 @@ import { Loader2 } from "lucide-react";
 
 interface PackageData {
   id: string;
-  basePrice: Decimal | null;
-  priceRangeMin: Decimal | null;
-  priceRangeMax: Decimal | null;
+  basePrice: Decimal | number | null;
+  priceRangeMin: Decimal | number | null;
+  priceRangeMax: Decimal | number | null;
   currency: string;
-  discount: Decimal | null;
+  discount: Decimal | number | null;
   hotelOptions: Array<{
     id: string;
     hotel: {
@@ -53,7 +53,7 @@ interface PackageData {
     arrivalAirport: string;
     departureDate: Date;
     returnDate: Date;
-    priceModifier: Decimal | null;
+    priceModifier: Decimal | number | null;
     currency: string;
     flightInfo: string | null;
   }>;
@@ -61,7 +61,7 @@ interface PackageData {
     id: string;
     name: string;
     description: string | null;
-    price: Decimal;
+    price: Decimal | number;
     currency: string;
     isRequired: boolean;
   }>;

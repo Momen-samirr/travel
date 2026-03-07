@@ -18,7 +18,7 @@ import { StaggerList } from "@/components/motion/stagger-list";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { PackageType } from "@/services/packages/types";
 
-interface PackageData {
+export interface PackageData {
   id: string;
   name: string;
   slug: string;
@@ -39,7 +39,7 @@ interface PackageData {
   };
 }
 
-interface FilterOptions {
+export interface FilterOptions {
   countries: string[];
   cities: Record<string, string[]>;
   priceRange: { min: number; max: number; currency: string };
