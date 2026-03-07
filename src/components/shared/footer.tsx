@@ -1,5 +1,14 @@
 import Link from "next/link";
-import { Plane, Luggage, Facebook, Twitter, Instagram, Mail } from "lucide-react";
+import {
+  Plane,
+  Luggage,
+  Facebook,
+  Twitter,
+  Instagram,
+  Mail,
+  PhoneIcon,
+  Phone,
+} from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -10,7 +19,10 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12">
           {/* Brand Section */}
           <div className="lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 font-bold text-xl mb-4 text-primary">
+            <Link
+              href="/"
+              className="flex items-center gap-2 font-bold text-xl mb-4 text-primary"
+            >
               <div className="relative">
                 <Plane className="h-7 w-7 text-primary" />
                 <Luggage className="h-4 w-4 text-accent absolute -bottom-1 -right-1" />
@@ -18,36 +30,30 @@ export function Footer() {
               <span>Tourism Co</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
-              Your trusted partner for amazing travel experiences. Discover the world with us and create memories that last a lifetime.
+              Your trusted partner for amazing travel experiences. Discover the
+              world with us and create memories that last a lifetime.
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.facebook.com/Eshtyaqq?rdid=hOuKQEQ16u3FzDn0&share_url=https%3A%2F%2Fwww.facebook.com%2Fshare%2F1BqYf43yob%2F#"
                 className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
                 aria-label="Facebook"
               >
                 <Facebook className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://whatsapp.com/channel/0029VaHvGNmHgZWUMmaGWD0v"
                 className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
                 aria-label="Twitter"
               >
-                <Twitter className="h-5 w-5" />
+                <Phone className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com/tishoury_tours/"
                 className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
                 aria-label="Instagram"
               >
                 <Instagram className="h-5 w-5" />
-              </a>
-              <a
-                href="#"
-                className="h-10 w-10 rounded-full bg-background border flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-all duration-300 ease-in-out"
-                aria-label="Email"
-              >
-                <Mail className="h-5 w-5" />
               </a>
             </div>
           </div>
@@ -57,22 +63,34 @@ export function Footer() {
             <h3 className="font-semibold mb-4 text-foreground">Services</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/flights" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/flights"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Flights
                 </Link>
               </li>
               <li>
-                <Link href="/charter-packages" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/charter-packages"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Charter Packages
                 </Link>
               </li>
               <li>
-                <Link href="/inbound-packages" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/inbound-packages"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Inbound Packages
                 </Link>
               </li>
               <li>
-                <Link href="/regular-packages" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/regular-packages"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Regular Packages
                 </Link>
               </li>
@@ -84,22 +102,34 @@ export function Footer() {
             <h3 className="font-semibold mb-4 text-foreground">Company</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/about"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/blogs" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/blogs"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Blog
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/contact"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Contact
                 </Link>
               </li>
               <li>
-                <Link href="/reviews" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/reviews"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Reviews
                 </Link>
               </li>
@@ -111,17 +141,26 @@ export function Footer() {
             <h3 className="font-semibold mb-4 text-foreground">Support</h3>
             <ul className="space-y-3 text-sm">
               <li>
-                <Link href="/complaints" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/complaints"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   Complaints
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/faq"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   FAQ
                 </Link>
               </li>
               <li>
-                <Link href="/bookings" className="text-muted-foreground hover:text-primary transition-colors">
+                <Link
+                  href="/bookings"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
                   My Bookings
                 </Link>
               </li>
@@ -135,10 +174,16 @@ export function Footer() {
             &copy; {currentYear} Tourism Co. All rights reserved.
           </p>
           <div className="flex gap-6 text-sm text-muted-foreground">
-            <Link href="/privacy" className="hover:text-primary transition-colors">
+            <Link
+              href="/privacy"
+              className="hover:text-primary transition-colors"
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="hover:text-primary transition-colors">
+            <Link
+              href="/terms"
+              className="hover:text-primary transition-colors"
+            >
               Terms of Service
             </Link>
           </div>
@@ -147,4 +192,3 @@ export function Footer() {
     </footer>
   );
 }
-
