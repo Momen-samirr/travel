@@ -20,6 +20,7 @@ import { PriceBreakdown } from "./price-breakdown";
 import { Decimal } from "@prisma/client/runtime/library";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 interface PackageData {
   id: string;
@@ -87,6 +88,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   const [numberOfInfants, setNumberOfInfants] = useState(0);
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const packageCurrency = normalizeCurrency(packageData.currency || DEFAULT_CURRENCY);
 
   // Fetch hotels based on selected departure
   const {
@@ -125,22 +127,22 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
       basePrice: packageData.basePrice,
       priceRangeMin: packageData.priceRangeMin,
       priceRangeMax: packageData.priceRangeMax,
-      currency: packageData.currency,
+      currency: packageCurrency,
       discount: packageData.discount,
       hotelOptions: hotelsToUse.map((opt: any) => ({
         id: opt.id,
         roomTypePricings: opt.roomTypePricings || [],
-        currency: opt.currency || packageData.currency,
+        currency: normalizeCurrency(opt.currency || packageCurrency),
       })),
       departureOptions: packageData.departureOptions.map((opt) => ({
         id: opt.id,
         priceModifier: opt.priceModifier,
-        currency: opt.currency,
+        currency: normalizeCurrency(opt.currency || packageCurrency),
       })),
       addons: packageData.addons.map((addon) => ({
         id: addon.id,
         price: addon.price,
-        currency: addon.currency,
+        currency: normalizeCurrency(addon.currency || packageCurrency),
       })),
     },
     {
@@ -337,7 +339,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                           {Number(option.priceModifier) > 0 ? "+" : ""}
                           {formatCurrency(
                             Number(option.priceModifier),
-                            option.currency
+                            normalizeCurrency(option.currency || packageCurrency)
                           )}
                         </div>
                       )}
@@ -469,7 +471,10 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                         <Label htmlFor={rtp.roomType.toLowerCase()} className="flex-1 cursor-pointer">
                           <div className="font-semibold">{roomTypeLabels[rtp.roomType] || rtp.roomType}</div>
                           <div className="text-sm text-muted-foreground">
-                            {formatCurrency(Number(rtp.adultPrice), rtp.currency || packageData.currency)}
+                            {formatCurrency(
+                              Number(rtp.adultPrice),
+                              normalizeCurrency(rtp.currency || packageCurrency)
+                            )}
                           </div>
                         </Label>
                       </div>
@@ -574,7 +579,10 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                     <div className="flex items-center justify-between">
                       <div className="font-semibold">{addon.name}</div>
                       <div className="font-semibold">
-                        {formatCurrency(Number(addon.price), addon.currency)}
+                        {formatCurrency(
+                          Number(addon.price),
+                          normalizeCurrency(addon.currency || packageCurrency)
+                        )}
                       </div>
                     </div>
                     {addon.description && (

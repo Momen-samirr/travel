@@ -1,19 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import { MapPin, Calendar, Hotel, Plane, Check, X, Package, FileText } from "lucide-react";
-import Link from "next/link";
+import { formatCurrency } from "@/lib/utils";
+import { Check, MapPin, Phone, X } from "lucide-react";
 import { Metadata } from "next";
-import { Badge } from "@/components/ui/badge";
-import { DynamicBookingForm } from "@/components/charter-packages/dynamic-booking-form";
-import { HotelMap } from "@/components/charter-packages/hotel-map";
 import { PackageType } from "@/services/packages/types";
-import { PackageReviewsList } from "@/components/packages/package-reviews-list";
-import { PackageReviewForm } from "@/components/packages/package-review-form";
-import { Star } from "lucide-react";
+import { BookingFormFactory } from "@/components/packages/booking/BookingFormFactory";
+import { type InboundTypeConfig, inboundTypeConfigSchema } from "@/lib/validations/charter-package";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export async function generateMetadata({
   params,
@@ -43,34 +38,15 @@ export default async function InboundPackageDetailPage({
   const { slug: rawSlug } = await params;
   const slug = decodeURIComponent(rawSlug).trim();
   
-  let pkg = await prisma.charterTravelPackage.findUnique({
+  const pkg = await prisma.charterTravelPackage.findUnique({
     where: { slug, type: PackageType.INBOUND },
     include: {
-      departureOptions: {
-        where: { isActive: true },
-        orderBy: { departureDate: "asc" },
-      },
       hotelOptions: {
         where: { isActive: true },
-        include: {
-          hotel: true,
-        },
+        include: { hotel: true },
       },
-      addons: {
-        where: { isActive: true },
-      },
-      reviews: {
-        where: { isApproved: true },
-        include: {
-          user: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      },
+      addons: { where: { isActive: true } },
+      departureOptions: { where: { isActive: true }, orderBy: { departureDate: "asc" } },
     },
   });
 
@@ -79,28 +55,50 @@ export default async function InboundPackageDetailPage({
   }
 
   const gallery = (pkg.gallery as string[]) || [];
-  const includedServices = (pkg.includedServices as string[]) || [];
-  const excludedServices = (pkg.excludedServices as string[]) || [];
-  const excursionProgram = (pkg.excursionProgram as string[]) || [];
-  const requiredDocuments = (pkg.requiredDocuments as string[]) || [];
+  const mainImage = pkg.mainImage || gallery[0] || "/placeholder-tour.jpg";
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
 
-  const validHotels = pkg.hotelOptions
-    .map((opt) => opt.hotel)
-    .filter((h) => h.latitude !== null && h.longitude !== null);
+  const fallbackConfig: InboundTypeConfig = {
+    header: {
+      campaignTitle: pkg.name,
+      subtitle: pkg.shortDescription || pkg.description || "Inbound package details",
+      durationText: `${pkg.nights} nights / ${pkg.days} days`,
+    },
+    includes: (pkg.includedServices as string[]) || [],
+    excludes: (pkg.excludedServices as string[]) || [],
+    itinerary: ((pkg.excursionProgram as string[]) || []).map((item, index) => ({
+      dayLabel: `Day ${index + 1}`,
+      title: `Program ${index + 1}`,
+      description: item,
+    })),
+    offer: {
+      currentPrice:
+        Number(pkg.basePrice || pkg.priceRangeMin || pkg.priceRangeMax || 0) || 0,
+      oldPrice: null,
+      currency: packageCurrency,
+      perPersonLabel: "Per Person",
+      validUntilText: "Limited time offer",
+    },
+    contact: {
+      phone: "Contact us",
+      email: "info@booking.com",
+      primaryAddress: `${pkg.destinationCity}, ${pkg.destinationCountry}`,
+      secondaryAddress: null,
+    },
+    pickupLocations: [],
+    transferOptions: [],
+  };
 
-  const avgRating =
-    pkg.reviews.length > 0
-      ? pkg.reviews.reduce((sum, review) => sum + review.rating, 0) /
-        pkg.reviews.length
-      : 0;
+  const parsedConfig = inboundTypeConfigSchema.safeParse(pkg.typeConfig);
+  const inboundConfig = parsedConfig.success ? parsedConfig.data : fallbackConfig;
+  const offerCurrency = normalizeCurrency(inboundConfig.offer.currency || packageCurrency);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      {/* Hero Section */}
-      <section className="relative h-[60vh] min-h-[400px] max-h-[600px] overflow-hidden">
-        {pkg.mainImage || gallery[0] ? (
+    <div className="min-h-screen bg-background">
+      <section className="relative h-[55vh] min-h-[360px] overflow-hidden">
+        {mainImage ? (
           <Image
-            src={pkg.mainImage || gallery[0] || "/placeholder-tour.jpg"}
+            src={mainImage}
             alt={pkg.name}
             fill
             className="object-cover"
@@ -110,12 +108,18 @@ export default async function InboundPackageDetailPage({
           <div className="w-full h-full bg-linear-to-br from-primary to-primary/80" />
         )}
         <div className="absolute inset-0 bg-black/40" />
-        <div className="container mx-auto px-4 relative z-10 h-full flex items-end pb-12">
-          <div className="max-w-4xl">
+        <div className="container mx-auto px-4 relative z-10 h-full flex items-end pb-10">
+          <div className="max-w-4xl text-white">
+            <p className="text-sm uppercase tracking-widest mb-3 opacity-90">
+              {inboundConfig.header.campaignTitle}
+            </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 text-shadow-lg">
               {pkg.name}
             </h1>
-            <div className="flex items-center gap-4 text-white/90">
+            <p className="text-lg md:text-xl mb-4 text-white/90">
+              {inboundConfig.header.subtitle}
+            </p>
+            <div className="flex items-center gap-5 text-white/90">
               <div className="flex items-center gap-2">
                 <MapPin className="h-5 w-5" />
                 <span>
@@ -123,18 +127,8 @@ export default async function InboundPackageDetailPage({
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                <span>
-                  {pkg.nights} nights / {pkg.days} days
-                </span>
+                <span>{inboundConfig.header.durationText}</span>
               </div>
-              {avgRating > 0 && (
-                <div className="flex items-center gap-2">
-                  <Star className="h-5 w-5 fill-yellow-400 text-yellow-400" />
-                  <span className="font-semibold">{avgRating.toFixed(1)}</span>
-                  <span>({pkg.reviews.length} reviews)</span>
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -142,22 +136,18 @@ export default async function InboundPackageDetailPage({
 
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Description */}
             <Card>
               <CardHeader>
-                <CardTitle>About This Package</CardTitle>
+                <CardTitle>About This Inbound Offer</CardTitle>
               </CardHeader>
               <CardContent>
-                <div
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: pkg.description }}
-                />
+                <p className="text-muted-foreground whitespace-pre-line">
+                  {pkg.description}
+                </p>
               </CardContent>
             </Card>
 
-            {/* Included/Excluded Services */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -168,7 +158,7 @@ export default async function InboundPackageDetailPage({
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {includedServices.map((service, index) => (
+                    {inboundConfig.includes.map((service, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
                         <span>{service}</span>
@@ -187,7 +177,7 @@ export default async function InboundPackageDetailPage({
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
-                    {excludedServices.map((service, index) => (
+                    {inboundConfig.excludes.map((service, index) => (
                       <li key={index} className="flex items-start gap-2">
                         <X className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
                         <span>{service}</span>
@@ -198,21 +188,21 @@ export default async function InboundPackageDetailPage({
               </Card>
             </div>
 
-            {/* Excursion Program */}
-            {excursionProgram.length > 0 && (
+            {inboundConfig.itinerary.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Excursion Program</CardTitle>
+                  <CardTitle>Day-by-Day Itinerary</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-3">
-                    {excursionProgram.map((excursion, index) => (
+                    {inboundConfig.itinerary.map((item, index) => (
                       <li key={index} className="flex gap-3">
                         <div className="shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                          {index + 1}
+                          {item.dayLabel}
                         </div>
                         <div className="flex-1">
-                          <p className="text-sm">{excursion}</p>
+                          <h4 className="font-semibold">{item.title}</h4>
+                          <p className="text-sm text-muted-foreground">{item.description}</p>
                         </div>
                       </li>
                     ))}
@@ -220,98 +210,78 @@ export default async function InboundPackageDetailPage({
                 </CardContent>
               </Card>
             )}
-
-            {/* Required Documents */}
-            {requiredDocuments.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Required Documents
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {requiredDocuments.map((doc, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <FileText className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                        <span>{doc}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Hotel Map */}
-            {validHotels.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hotel Locations</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <HotelMap
-                    hotels={validHotels.map((h) => ({
-                      id: h.id,
-                      name: h.name,
-                      address: h.address,
-                      city: h.city,
-                      country: h.country,
-                      latitude: h.latitude,
-                      longitude: h.longitude,
-                      placeId: h.placeId,
-                    }))}
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Reviews */}
-            <PackageReviewsList reviews={pkg.reviews} averageRating={avgRating} />
-            <PackageReviewForm packageId={pkg.id} />
           </div>
 
-          {/* Sidebar - Booking Form */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
+          <div className="lg:col-span-1 space-y-6">
+            <div className="sticky top-24 space-y-6">
               <Card>
                 <CardHeader>
-                  <CardTitle>Book This Package</CardTitle>
+                  <CardTitle>Offer</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <DynamicBookingForm
-                    packageData={{
-                      id: pkg.id,
-                      basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
-                      priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
-                      priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-                      currency: pkg.currency,
-                      discount: pkg.discount ? Number(pkg.discount) : null,
-                      hotelOptions: pkg.hotelOptions.map((opt) => ({
-                        id: opt.id,
-                        hotel: {
-                          id: opt.hotel.id,
-                          name: opt.hotel.name,
-                          city: opt.hotel.city,
-                          country: opt.hotel.country,
-                        },
-                        starRating: opt.starRating,
-                        bookingRating: opt.bookingRating,
-                      })),
-                      departureOptions: pkg.departureOptions.map((option) => ({
-                        ...option,
-                        priceModifier: option.priceModifier
-                          ? Number(option.priceModifier)
-                          : null,
-                      })),
-                      addons: pkg.addons.map((addon) => ({
-                        ...addon,
-                        price: Number(addon.price),
-                      })),
-                    }}
-                  />
+                <CardContent className="space-y-2">
+                  <p className="text-3xl font-bold text-primary">
+                    {formatCurrency(inboundConfig.offer.currentPrice, offerCurrency)}
+                  </p>
+                  {inboundConfig.offer.oldPrice ? (
+                    <p className="line-through text-muted-foreground">
+                      {formatCurrency(inboundConfig.offer.oldPrice, offerCurrency)}
+                    </p>
+                  ) : null}
+                  <p className="text-sm text-muted-foreground">{inboundConfig.offer.perPersonLabel}</p>
+                  <p className="text-sm">{inboundConfig.offer.validUntilText}</p>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contact</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    {inboundConfig.contact.phone}
+                  </p>
+                  <p>{inboundConfig.contact.email}</p>
+                  <p>{inboundConfig.contact.primaryAddress}</p>
+                  {inboundConfig.contact.secondaryAddress ? (
+                    <p>{inboundConfig.contact.secondaryAddress}</p>
+                  ) : null}
+                </CardContent>
+              </Card>
+
+              <BookingFormFactory
+                package={{
+                  id: pkg.id,
+                  type: PackageType.INBOUND,
+                  name: pkg.name,
+                  slug: pkg.slug,
+                  description: pkg.description,
+                  shortDescription: pkg.shortDescription,
+                  destinationCountry: pkg.destinationCountry,
+                  destinationCity: pkg.destinationCity,
+                  nights: pkg.nights,
+                  days: pkg.days,
+                  mainImage: pkg.mainImage,
+                  gallery: pkg.gallery,
+                  basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
+                  priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
+                  priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
+                  currency: packageCurrency,
+                  discount: pkg.discount ? Number(pkg.discount) : null,
+                  typeConfig: inboundConfig,
+                  isActive: pkg.isActive,
+                  createdAt: pkg.createdAt,
+                  updatedAt: pkg.updatedAt,
+                }}
+                packageData={{
+                  ...pkg,
+                  typeConfig: inboundConfig,
+                  addons: pkg.addons.map((addon) => ({
+                    ...addon,
+                    price: Number(addon.price),
+                  })),
+                }}
+              />
             </div>
           </div>
         </div>

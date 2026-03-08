@@ -8,6 +8,7 @@ import { MapPin, Calendar, Hotel, Plane } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PackageType, TravelPackage } from "@/services/packages/types";
 import { PackageTypeBadge } from "./PackageTypeBadge";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 interface PackageCardProps {
   package: TravelPackage;
@@ -15,10 +16,11 @@ interface PackageCardProps {
 }
 
 export function PackageCard({ package: pkg, showType = true }: PackageCardProps) {
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
   const displayPrice = pkg.priceRangeMin && pkg.priceRangeMax
-    ? `${formatCurrency(pkg.priceRangeMin, pkg.currency)} - ${formatCurrency(pkg.priceRangeMax, pkg.currency)}`
+    ? `${formatCurrency(pkg.priceRangeMin, packageCurrency)} - ${formatCurrency(pkg.priceRangeMax, packageCurrency)}`
     : pkg.basePrice
-    ? formatCurrency(pkg.basePrice, pkg.currency)
+    ? formatCurrency(pkg.basePrice, packageCurrency)
     : "Contact for pricing";
 
   const getPackageUrl = () => {

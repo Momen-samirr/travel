@@ -8,6 +8,56 @@ const PAYMOB_HMAC_SECRET = process.env.PAYMOB_HMAC_SECRET!;
 const PAYMOB_IFRAME_ID = process.env.PAYMOB_IFRAME_ID!;
 
 const PAYMOB_BASE_URL = "https://accept.paymob.com";
+const PAYMOB_DEFAULT_CURRENCY = (process.env.PAYMOB_DEFAULT_CURRENCY || "EGP")
+  .trim()
+  .toUpperCase();
+
+export class PaymobValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PaymobValidationError";
+  }
+}
+
+function normalizePaymobCurrency(currency?: string | null): string {
+  const normalized = (currency || "EGP").trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(normalized)) {
+    throw new PaymobValidationError(
+      `Invalid currency format for Paymob: "${currency ?? ""}"`
+    );
+  }
+  return normalized;
+}
+
+function resolvePaymobConfigForCurrency(currency: string): {
+  integrationId: string;
+  iframeId: string;
+} {
+  const defaultIntegrationId = process.env.PAYMOB_INTEGRATION_ID || "";
+  const defaultIframeId = process.env.PAYMOB_IFRAME_ID || "";
+  const currencySpecificIntegrationId =
+    process.env[`PAYMOB_INTEGRATION_ID_${currency}`] || "";
+  const currencySpecificIframeId = process.env[`PAYMOB_IFRAME_ID_${currency}`] || "";
+
+  if (currencySpecificIntegrationId && currencySpecificIframeId) {
+    return {
+      integrationId: currencySpecificIntegrationId,
+      iframeId: currencySpecificIframeId,
+    };
+  }
+
+  // Backward-compatible default config path for a single-currency setup.
+  if (currency === PAYMOB_DEFAULT_CURRENCY) {
+    return {
+      integrationId: defaultIntegrationId,
+      iframeId: defaultIframeId,
+    };
+  }
+
+  throw new PaymobValidationError(
+    `Paymob is not configured for currency "${currency}". Set PAYMOB_INTEGRATION_ID_${currency} and PAYMOB_IFRAME_ID_${currency}, or use ${PAYMOB_DEFAULT_CURRENCY}.`
+  );
+}
 
 export interface PaymobCustomer {
   first_name: string;
@@ -48,6 +98,8 @@ export async function createPaymobIframeSession(
   }
 
   const { amountCents, currency, merchantReference, customer } = params;
+  const normalizedCurrency = normalizePaymobCurrency(currency);
+  const { integrationId, iframeId } = resolvePaymobConfigForCurrency(normalizedCurrency);
 
   let phoneNumber = customer.phone_number?.replace(/\s+/g, "") || "";
   if (phoneNumber.startsWith("+20")) {
@@ -94,7 +146,7 @@ export async function createPaymobIframeSession(
       auth_token: authToken,
       delivery_needed: "false",
       amount_cents: amountCents,
-      currency: currency || "EGP",
+      currency: normalizedCurrency,
       merchant_order_id: merchantReference,
       items: [],
     }),
@@ -115,8 +167,8 @@ export async function createPaymobIframeSession(
       expiration: 3600,
       order_id: orderId,
       billing_data: billingData,
-      currency: currency || "EGP",
-      integration_id: parseInt(PAYMOB_INTEGRATION_ID, 10),
+      currency: normalizedCurrency,
+      integration_id: parseInt(integrationId, 10),
     }),
   });
   if (!keyRes.ok) {
@@ -145,12 +197,18 @@ export async function createPaymobIframeSession(
       }
     }
 
+    if (msg.toLowerCase().includes("invalid currency")) {
+      throw new PaymobValidationError(
+        `Paymob rejected currency "${normalizedCurrency}" for integration ${integrationId}. Configure matching integration/iframe IDs for this currency.`
+      );
+    }
+
     throw new Error(`Paymob: ${msg}`);
   }
   const { token: paymentToken } = (await keyRes.json()) as { token: string };
 
   // 4. Classic iframe URL
-  const iframeUrl = `${PAYMOB_BASE_URL}/api/acceptance/iframes/${PAYMOB_IFRAME_ID}?payment_token=${encodeURIComponent(
+  const iframeUrl = `${PAYMOB_BASE_URL}/api/acceptance/iframes/${iframeId}?payment_token=${encodeURIComponent(
     paymentToken
   )}`;
 

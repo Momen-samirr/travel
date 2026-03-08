@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { CreditCard, Building2, Copy, Check } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface BankDetails {
   accountName: string;
@@ -195,7 +196,7 @@ export default function PaymentPage() {
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-muted-foreground">Amount</span>
                     <span className="font-mono font-semibold">
-                      {bankDetails.amount} {bankDetails.currency}
+                      {formatCurrency(bankDetails.amount, bankDetails.currency)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center gap-2">

@@ -10,6 +10,7 @@ import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { BookingFormFactory } from "@/components/packages/booking/BookingFormFactory";
 import { PackageTypeBadge } from "@/components/packages/shared/PackageTypeBadge";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 import { PackageType } from "@/services/packages/types";
 
 export async function generateMetadata({
@@ -120,10 +121,12 @@ export default async function PackageDetailPage({
       ? pkg.reviews.reduce((sum, review) => sum + review.rating, 0) / pkg.reviews.length
       : 0;
 
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
+
   const displayPrice = pkg.priceRangeMin && pkg.priceRangeMax
-    ? `${formatCurrency(Number(pkg.priceRangeMin), pkg.currency)} - ${formatCurrency(Number(pkg.priceRangeMax), pkg.currency)}`
+    ? `${formatCurrency(Number(pkg.priceRangeMin), packageCurrency)} - ${formatCurrency(Number(pkg.priceRangeMax), packageCurrency)}`
     : pkg.basePrice
-    ? formatCurrency(Number(pkg.basePrice), pkg.currency)
+    ? formatCurrency(Number(pkg.basePrice), packageCurrency)
     : "Contact for pricing";
 
   return (
@@ -292,7 +295,7 @@ export default async function PackageDetailPage({
               basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
               priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
               priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-              currency: pkg.currency,
+              currency: packageCurrency,
               discount: pkg.discount ? Number(pkg.discount) : null,
               typeConfig: pkg.typeConfig,
               isActive: pkg.isActive,

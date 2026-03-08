@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { DynamicBookingForm } from "@/components/charter-packages/dynamic-booking-form";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 import { HotelMap } from "@/components/charter-packages/hotel-map";
 import { PackageType } from "@/services/packages/types";
 import { PackageReviewsList } from "@/components/packages/package-reviews-list";
@@ -130,11 +131,13 @@ export default async function CharterPackageDetailPage({
         pkg.reviews.length
       : 0;
 
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
+
   const displayPrice =
     pkg.priceRangeMin && pkg.priceRangeMax
-      ? `${formatCurrency(Number(pkg.priceRangeMin), pkg.currency)} - ${formatCurrency(Number(pkg.priceRangeMax), pkg.currency)}`
+      ? `${formatCurrency(Number(pkg.priceRangeMin), packageCurrency)} - ${formatCurrency(Number(pkg.priceRangeMax), packageCurrency)}`
       : pkg.basePrice
-      ? formatCurrency(Number(pkg.basePrice), pkg.currency)
+      ? formatCurrency(Number(pkg.basePrice), packageCurrency)
       : "Contact for pricing";
 
   return (
@@ -207,7 +210,10 @@ export default async function CharterPackageDetailPage({
                         {option.priceModifier && (
                           <Badge variant="outline">
                             {Number(option.priceModifier) > 0 ? "+" : ""}
-                            {formatCurrency(Number(option.priceModifier), option.currency)}
+                            {formatCurrency(
+                              Number(option.priceModifier),
+                              normalizeCurrency(option.currency || packageCurrency)
+                            )}
                           </Badge>
                         )}
                       </div>
@@ -346,7 +352,10 @@ export default async function CharterPackageDetailPage({
                           <Badge variant="destructive">Required</Badge>
                         )}
                         <span className="font-semibold">
-                          {formatCurrency(Number(addon.price), addon.currency)}
+                          {formatCurrency(
+                            Number(addon.price),
+                            normalizeCurrency(addon.currency || packageCurrency)
+                          )}
                         </span>
                       </div>
                     </div>
@@ -436,7 +445,7 @@ export default async function CharterPackageDetailPage({
                   basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
                   priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
                   priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-                  currency: pkg.currency,
+                  currency: packageCurrency,
                   discount: pkg.discount ? Number(pkg.discount) : null,
                   hotelOptions: pkg.hotelOptions.map((opt) => ({
                     id: opt.id,

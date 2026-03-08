@@ -198,6 +198,8 @@ export default async function CharterPackagesPage({
         initialTotal={total}
         initialPage={page}
         initialFilterOptions={filterOptions ?? undefined}
+        packageType={PackageType.CHARTER}
+        basePath="/charter-packages"
       />
     </div>
   );

@@ -14,6 +14,7 @@ import { PackageType } from "@/services/packages/types";
 import { PackageReviewsList } from "@/components/packages/package-reviews-list";
 import { PackageReviewForm } from "@/components/packages/package-review-form";
 import { Star } from "lucide-react";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export async function generateMetadata({
   params,
@@ -93,6 +94,7 @@ export default async function RegularPackageDetailPage({
       ? pkg.reviews.reduce((sum, review) => sum + review.rating, 0) /
         pkg.reviews.length
       : 0;
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -285,7 +287,7 @@ export default async function RegularPackageDetailPage({
                       basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
                       priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
                       priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-                      currency: pkg.currency,
+                      currency: packageCurrency,
                       discount: pkg.discount ? Number(pkg.discount) : null,
                       hotelOptions: pkg.hotelOptions.map((opt) => ({
                         id: opt.id,

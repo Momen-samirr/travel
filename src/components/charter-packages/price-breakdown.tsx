@@ -5,6 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 interface PriceBreakdownProps {
   basePrice: number;
@@ -47,6 +48,7 @@ export function PriceBreakdown({
 }: PriceBreakdownProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const totalTravelers = numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants;
+  const displayCurrency = normalizeCurrency(currency || DEFAULT_CURRENCY);
 
   return (
     <Card>
@@ -70,10 +72,10 @@ export function PriceBreakdown({
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between text-2xl font-bold text-primary">
           <span>Total</span>
-          <span>{formatCurrency(total, currency)}</span>
+          <span>{formatCurrency(total, displayCurrency)}</span>
         </div>
         <div className="text-sm text-muted-foreground">
-          {formatCurrency(totalPerPerson, currency)} per person × {totalTravelers}{" "}
+          {formatCurrency(totalPerPerson, displayCurrency)} per person × {totalTravelers}{" "}
           {totalTravelers === 1 ? "traveler" : "travelers"}
         </div>
 
@@ -82,7 +84,7 @@ export function PriceBreakdown({
             {basePrice > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Base Price</span>
-                <span>{formatCurrency(basePrice, currency)}</span>
+                <span>{formatCurrency(basePrice, displayCurrency)}</span>
               </div>
             )}
 
@@ -91,7 +93,7 @@ export function PriceBreakdown({
                 <span className="text-muted-foreground">Departure Modifier</span>
                 <span>
                   {departureModifier > 0 ? "+" : ""}
-                  {formatCurrency(departureModifier, currency)}
+                  {formatCurrency(departureModifier, displayCurrency)}
                 </span>
               </div>
             )}
@@ -101,7 +103,7 @@ export function PriceBreakdown({
                 <span className="text-muted-foreground">
                   Adults ({numberOfAdults} {numberOfAdults === 1 ? "adult" : "adults"})
                 </span>
-                <span>{formatCurrency(hotelRoomCost, currency)}</span>
+                <span>{formatCurrency(hotelRoomCost, displayCurrency)}</span>
               </div>
             )}
 
@@ -110,7 +112,7 @@ export function PriceBreakdown({
                 <span className="text-muted-foreground">
                   Children (6-12 Years) ({numberOfChildren6to12})
                 </span>
-                <span>{formatCurrency(children6to12Cost, currency)}</span>
+                <span>{formatCurrency(children6to12Cost, displayCurrency)}</span>
               </div>
             )}
 
@@ -119,7 +121,7 @@ export function PriceBreakdown({
                 <span className="text-muted-foreground">
                   Children (2-6 Years) ({numberOfChildren2to6})
                 </span>
-                <span>{formatCurrency(children2to6Cost, currency)}</span>
+                <span>{formatCurrency(children2to6Cost, displayCurrency)}</span>
               </div>
             )}
 
@@ -128,7 +130,7 @@ export function PriceBreakdown({
                 <span className="text-muted-foreground">
                   Infants (0-2 Years) ({numberOfInfants})
                 </span>
-                <span>{formatCurrency(infantsCost, currency)}</span>
+                <span>{formatCurrency(infantsCost, displayCurrency)}</span>
               </div>
             )}
 
@@ -138,7 +140,7 @@ export function PriceBreakdown({
                   <span className="text-muted-foreground">
                     Add-ons ({totalTravelers} {totalTravelers === 1 ? "person" : "people"})
                   </span>
-                  <span>{formatCurrency(addonsCost, currency)}</span>
+                  <span>{formatCurrency(addonsCost, displayCurrency)}</span>
                 </div>
                 {selectedAddons.length > 0 && (
                   <div className="pl-4 space-y-1 text-xs text-muted-foreground">
@@ -146,7 +148,7 @@ export function PriceBreakdown({
                       <div key={addon.id} className="flex justify-between">
                         <span>{addon.name}</span>
                         <span>
-                          {formatCurrency(addon.price, currency)} × {totalTravelers} = {formatCurrency(addon.price * totalTravelers, currency)}
+                          {formatCurrency(addon.price, displayCurrency)} × {totalTravelers} = {formatCurrency(addon.price * totalTravelers, displayCurrency)}
                         </span>
                       </div>
                     ))}
@@ -158,20 +160,20 @@ export function PriceBreakdown({
             <div className="flex justify-between pt-2 border-t">
               <span className="font-medium">Subtotal</span>
               <span className="font-medium">
-                {formatCurrency(subtotal, currency)}
+                {formatCurrency(subtotal, displayCurrency)}
               </span>
             </div>
 
             {discount > 0 && (
               <div className="flex justify-between text-green-600">
                 <span>Discount</span>
-                <span>-{formatCurrency(discount, currency)}</span>
+                <span>-{formatCurrency(discount, displayCurrency)}</span>
               </div>
             )}
 
             <div className="flex justify-between pt-2 border-t font-bold text-lg">
               <span>Total</span>
-              <span>{formatCurrency(total, currency)}</span>
+              <span>{formatCurrency(total, displayCurrency)}</span>
             </div>
           </div>
         )}

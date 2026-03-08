@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export default async function BookingDetailPage({
   params,
@@ -104,6 +105,7 @@ export default async function BookingDetailPage({
   };
 
   const guestDetails = booking.guestDetails as any;
+  const bookingCurrency = normalizeCurrency(booking.currency || DEFAULT_CURRENCY);
   
   // Handle flight bookings with multiple passengers
   const isFlightBooking = booking.bookingType === "FLIGHT" && booking.flightOfferData;
@@ -164,7 +166,7 @@ export default async function BookingDetailPage({
               <div>
                 <div className="text-sm text-gray-600 mb-1">Total Amount</div>
                 <div className="text-2xl font-bold text-primary">
-                  {formatCurrency(Number(booking.totalAmount), booking.currency)}
+                  {formatCurrency(Number(booking.totalAmount), bookingCurrency)}
                 </div>
               </div>
             </CardContent>
@@ -206,7 +208,10 @@ export default async function BookingDetailPage({
                       <div className="text-sm">
                         Price Modifier:{" "}
                         {Number(booking.charterDepartureOption.priceModifier) > 0 ? "+" : ""}
-                        {formatCurrency(Number(booking.charterDepartureOption.priceModifier), booking.currency)}
+                        {formatCurrency(
+                          Number(booking.charterDepartureOption.priceModifier),
+                          bookingCurrency
+                        )}
                       </div>
                     )}
                   </div>

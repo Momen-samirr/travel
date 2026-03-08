@@ -14,6 +14,7 @@ import {
   ValidationResult,
 } from "../types";
 import { Decimal } from "@prisma/client/runtime/library";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export class HotelCharterService implements IPackageService {
   async searchPackages(params: PackageSearchParams): Promise<PackageSearchResult> {
@@ -245,7 +246,7 @@ export class HotelCharterService implements IPackageService {
         roomPrice,
         addonsPrice,
         totalPrice,
-        currency: pkg.currency,
+        currency: normalizeCurrency(pkg.currency || DEFAULT_CURRENCY),
         breakdown: [
           { label: "Base Price", amount: basePrice },
           { label: "Departure Modifier", amount: departureModifier },
@@ -322,7 +323,7 @@ export class HotelCharterService implements IPackageService {
       basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
       priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
       priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-      currency: pkg.currency,
+      currency: normalizeCurrency(pkg.currency || DEFAULT_CURRENCY),
       discount: pkg.discount ? Number(pkg.discount) : null,
       typeConfig: pkg.typeConfig,
       isActive: pkg.isActive,

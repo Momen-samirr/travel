@@ -14,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Eye } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 import { DeleteButton } from "@/components/admin/delete-button";
 
 export const runtime = "nodejs";
@@ -65,61 +66,66 @@ export default async function AdminCharterPackagesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {packages.map((pkg) => (
-              <TableRow key={pkg.id}>
-                <TableCell className="font-medium">{pkg.name}</TableCell>
-                <TableCell>
-                  {pkg.destinationCity}, {pkg.destinationCountry}
-                </TableCell>
-                <TableCell>
-                  {pkg.nights} nights / {pkg.days} days
-                </TableCell>
-                <TableCell>
-                  {pkg.priceRangeMin && pkg.priceRangeMax
-                    ? `${formatCurrency(Number(pkg.priceRangeMin), pkg.currency)} - ${formatCurrency(Number(pkg.priceRangeMax), pkg.currency)}`
-                    : pkg.basePrice
-                    ? formatCurrency(Number(pkg.basePrice), pkg.currency)
-                    : "N/A"}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2 text-sm">
-                    <Badge variant="outline">
-                      {pkg._count.departureOptions} Departures
-                    </Badge>
-                    <Badge variant="outline">
-                      {pkg._count.hotelOptions} Hotels
-                    </Badge>
-                    <Badge variant="outline">{pkg._count.addons} Add-ons</Badge>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {pkg.isActive ? (
-                    <Badge variant="default">Active</Badge>
-                  ) : (
-                    <Badge variant="secondary">Inactive</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/admin/charter-packages/${pkg.id}`}>
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <Button asChild variant="ghost" size="sm">
-                      <Link href={`/admin/charter-packages/${pkg.id}/edit`}>
-                        <Edit className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                    <DeleteButton
-                      id={pkg.id}
-                      entityType="charter-package"
-                      entityName={pkg.name}
-                    />
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {packages.map((pkg) => {
+              const packageCurrency = normalizeCurrency(
+                pkg.currency || DEFAULT_CURRENCY
+              );
+              return (
+                <TableRow key={pkg.id}>
+                  <TableCell className="font-medium">{pkg.name}</TableCell>
+                  <TableCell>
+                    {pkg.destinationCity}, {pkg.destinationCountry}
+                  </TableCell>
+                  <TableCell>
+                    {pkg.nights} nights / {pkg.days} days
+                  </TableCell>
+                  <TableCell>
+                    {pkg.priceRangeMin && pkg.priceRangeMax
+                      ? `${formatCurrency(Number(pkg.priceRangeMin), packageCurrency)} - ${formatCurrency(Number(pkg.priceRangeMax), packageCurrency)}`
+                      : pkg.basePrice
+                      ? formatCurrency(Number(pkg.basePrice), packageCurrency)
+                      : "N/A"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2 text-sm">
+                      <Badge variant="outline">
+                        {pkg._count.departureOptions} Departures
+                      </Badge>
+                      <Badge variant="outline">
+                        {pkg._count.hotelOptions} Hotels
+                      </Badge>
+                      <Badge variant="outline">{pkg._count.addons} Add-ons</Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {pkg.isActive ? (
+                      <Badge variant="default">Active</Badge>
+                    ) : (
+                      <Badge variant="secondary">Inactive</Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/admin/charter-packages/${pkg.id}`}>
+                          <Eye className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <Button asChild variant="ghost" size="sm">
+                        <Link href={`/admin/charter-packages/${pkg.id}/edit`}>
+                          <Edit className="h-4 w-4" />
+                        </Link>
+                      </Button>
+                      <DeleteButton
+                        id={pkg.id}
+                        entityType="charter-package"
+                        entityName={pkg.name}
+                      />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>

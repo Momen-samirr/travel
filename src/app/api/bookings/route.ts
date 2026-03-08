@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { bookingSchema, type BookingInput } from "@/lib/validations/booking";
+import { inboundTypeConfigSchema } from "@/lib/validations/charter-package";
 import { getCurrentUser } from "@/lib/clerk";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,7 +80,7 @@ export async function POST(request: NextRequest) {
 
     // Calculate total amount based on booking type
     let totalAmount = 0;
-    let currency = "EGP";
+    let currency = DEFAULT_CURRENCY;
 
     if (data.bookingType === "TOUR" && data.tourId) {
       const tour = await prisma.tour.findUnique({
@@ -90,8 +92,8 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         );
       }
-      totalAmount = Number(tour.discountPrice || tour.price) * data.numberOfGuests;
-      currency = tour.currency;
+      totalAmount = Number(tour.discountPrice || tour.price) * (data.numberOfGuests || 1);
+      currency = normalizeCurrency(tour.currency || DEFAULT_CURRENCY);
     } else if (data.bookingType === "FLIGHT") {
       // For flight bookings, we use Amadeus offers (not stored in DB)
       // Price should come from confirmed flight offer or be provided
@@ -100,7 +102,7 @@ export async function POST(request: NextRequest) {
       if (bookingData.totalAmount && bookingData.totalAmount > 0) {
         // Use provided totalAmount (from frontend after price confirmation)
         totalAmount = bookingData.totalAmount;
-        currency = bookingData.currency || "EGP";
+        currency = normalizeCurrency(bookingData.currency || DEFAULT_CURRENCY);
       } else if (data.flightOfferData) {
         // Fallback: Extract price from flight offer data
         // Structure can be: { outbound: {...}, return: {...} } or direct offer
@@ -114,8 +116,8 @@ export async function POST(request: NextRequest) {
         const pricePerPerson = outboundPrice + returnPrice;
         
         if (pricePerPerson > 0) {
-          totalAmount = pricePerPerson * data.numberOfGuests;
-          currency = outbound?.price?.currency || "EGP";
+          totalAmount = pricePerPerson * (data.numberOfGuests || 1);
+          currency = normalizeCurrency(outbound?.price?.currency || DEFAULT_CURRENCY);
         } else {
           return NextResponse.json(
             { error: "Flight price could not be determined. Please try again." },
@@ -139,8 +141,8 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        totalAmount = Number(flight.price) * data.numberOfGuests;
-        currency = flight.currency;
+        totalAmount = Number(flight.price) * (data.numberOfGuests || 1);
+        currency = normalizeCurrency(flight.currency || DEFAULT_CURRENCY);
       } else {
         return NextResponse.json(
           { error: "Flight offer data or flight ID is required for flight bookings" },
@@ -174,8 +176,8 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         );
       }
-      totalAmount = Number(visa.price) * data.numberOfGuests;
-      currency = visa.currency;
+      totalAmount = Number(visa.price) * (data.numberOfGuests || 1);
+      currency = normalizeCurrency(visa.currency || DEFAULT_CURRENCY);
     } else if (data.bookingType === "CHARTER_PACKAGE" && data.charterPackageId) {
       const pkg = await prisma.charterTravelPackage.findUnique({
         where: { id: data.charterPackageId },
@@ -192,95 +194,157 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Validate required fields for charter package booking
-      if (!data.charterHotelOptionId || !data.charterDepartureOptionId || !data.roomType) {
-        return NextResponse.json(
-          { error: "Hotel option, departure option, and room type are required", message: "Hotel option, departure option, and room type are required" },
-          { status: 400 }
-        );
-      }
+      if (pkg.type === "INBOUND") {
+        const parsedTypeConfig = inboundTypeConfigSchema.safeParse(pkg.typeConfig);
+        const transferOptions = parsedTypeConfig.success
+          ? parsedTypeConfig.data.transferOptions
+          : [];
 
-      // Validate hotel option belongs to package
-      const hotelOption = pkg.hotelOptions.find(
-        (opt) => opt.id === data.charterHotelOptionId
-      );
-      if (!hotelOption) {
-        return NextResponse.json(
-          { error: "Invalid hotel option selected", message: "Invalid hotel option selected" },
-          { status: 400 }
-        );
-      }
+        const numberOfAdults = data.numberOfAdults || data.numberOfGuests || 1;
+        const numberOfChildren6to12 =
+          data.numberOfChildren6to12 || data.numberOfChildren || 0;
+        const numberOfChildren2to6 = data.numberOfChildren2to6 || 0;
+        const numberOfInfants = data.numberOfInfants || 0;
+        const totalTravelers =
+          numberOfAdults +
+          numberOfChildren6to12 +
+          numberOfChildren2to6 +
+          numberOfInfants;
 
-      // Validate departure option belongs to package
-      const departureOption = pkg.departureOptions.find(
-        (opt) => opt.id === data.charterDepartureOptionId
-      );
-      if (!departureOption) {
-        return NextResponse.json(
-          { error: "Invalid departure option selected", message: "Invalid departure option selected" },
-          { status: 400 }
-        );
-      }
+        const currentPrice =
+          parsedTypeConfig.success && parsedTypeConfig.data.offer.currentPrice > 0
+            ? parsedTypeConfig.data.offer.currentPrice
+            : Number(pkg.basePrice || pkg.priceRangeMin || pkg.priceRangeMax || 0);
 
-      // Fetch pricing for the selected departure and hotel combination
-      const departureHotelPricing = await prisma.departureHotelPricing.findFirst({
-        where: {
-          departureOptionId: data.charterDepartureOptionId,
-          hotelOptionId: data.charterHotelOptionId,
-        },
-        include: {
-          roomTypePricings: true,
-        },
-      });
-
-      if (!departureHotelPricing) {
-        return NextResponse.json(
-          { error: "Selected hotel is not available for the chosen departure option", message: "Selected hotel is not available for the chosen departure option" },
-          { status: 400 }
-        );
-      }
-
-      // Validate add-ons
-      if (data.selectedAddonIds && Array.isArray(data.selectedAddonIds)) {
-        const invalidAddons = data.selectedAddonIds.filter(
-          (addonId) => !pkg.addons.some((addon) => addon.id === addonId && addon.isActive)
-        );
-        if (invalidAddons.length > 0) {
+        if (!currentPrice || currentPrice <= 0) {
           return NextResponse.json(
-            { error: "Invalid add-ons selected", message: "Invalid add-ons selected" },
+            { error: "Inbound price is not configured", message: "Inbound price is not configured" },
             { status: 400 }
           );
         }
-      }
 
-      // Calculate base price (optional, used as fallback only)
-      let basePrice = 0;
-      if (pkg.basePrice) {
-        basePrice = Number(pkg.basePrice);
-      } else if (pkg.priceRangeMin && pkg.priceRangeMax) {
-        basePrice =
-          (Number(pkg.priceRangeMin) + Number(pkg.priceRangeMax)) / 2;
-      }
-      // Note: basePrice can be 0 if not configured - we'll use room type pricing instead
+        let selectedTransferCost = 0;
+        if (Array.isArray(data.transferOptions) && data.transferOptions.length > 0) {
+          selectedTransferCost = data.transferOptions.reduce((sum, optionId) => {
+            const option = transferOptions.find((item) => item.id === optionId);
+            return sum + (option?.price || 0);
+          }, 0);
+        }
 
-      // Calculate departure modifier
-      let departureModifier = 0;
-      if (departureOption.priceModifier) {
-        departureModifier = Number(departureOption.priceModifier);
-      }
+        let addonsCost = 0;
+        if (Array.isArray(data.selectedAddonIds) && data.selectedAddonIds.length > 0) {
+          const invalidAddons = data.selectedAddonIds.filter(
+            (addonId) => !pkg.addons.some((addon) => addon.id === addonId && addon.isActive)
+          );
+          if (invalidAddons.length > 0) {
+            return NextResponse.json(
+              { error: "Invalid add-ons selected", message: "Invalid add-ons selected" },
+              { status: 400 }
+            );
+          }
 
-      // Calculate costs from RoomTypePricing (per-person pricing)
-      const numberOfAdults = data.numberOfAdults || data.numberOfGuests || 1;
-      const numberOfChildren6to12 = data.numberOfChildren6to12 || 0;
-      const numberOfChildren2to6 = data.numberOfChildren2to6 || 0;
-      const numberOfInfants = data.numberOfInfants || 0;
+          addonsCost = data.selectedAddonIds.reduce((sum, addonId) => {
+            const addon = pkg.addons.find((item) => item.id === addonId);
+            return sum + (addon ? Number(addon.price) * totalTravelers : 0);
+          }, 0);
+        }
 
-      let adultCost = 0;
-      let children6to12Cost = 0;
-      let children2to6Cost = 0;
-      let infantsCost = 0;
+        totalAmount = currentPrice * totalTravelers + selectedTransferCost + addonsCost;
+        currency = normalizeCurrency(
+          parsedTypeConfig.success
+            ? parsedTypeConfig.data.offer.currency
+            : pkg.currency || DEFAULT_CURRENCY
+        );
+      } else {
+        // Validate required fields for charter package booking
+        if (!data.charterHotelOptionId || !data.charterDepartureOptionId || !data.roomType) {
+          return NextResponse.json(
+            { error: "Hotel option, departure option, and room type are required", message: "Hotel option, departure option, and room type are required" },
+            { status: 400 }
+          );
+        }
 
-      if (data.roomType) {
+        // Validate hotel option belongs to package
+        const hotelOption = pkg.hotelOptions.find(
+          (opt) => opt.id === data.charterHotelOptionId
+        );
+        if (!hotelOption) {
+          return NextResponse.json(
+            { error: "Invalid hotel option selected", message: "Invalid hotel option selected" },
+            { status: 400 }
+          );
+        }
+
+        // Validate departure option belongs to package
+        const departureOption = pkg.departureOptions.find(
+          (opt) => opt.id === data.charterDepartureOptionId
+        );
+        if (!departureOption) {
+          return NextResponse.json(
+            { error: "Invalid departure option selected", message: "Invalid departure option selected" },
+            { status: 400 }
+          );
+        }
+
+      // Fetch pricing for the selected departure and hotel combination
+        const departureHotelPricing = await prisma.departureHotelPricing.findFirst({
+          where: {
+            departureOptionId: data.charterDepartureOptionId,
+            hotelOptionId: data.charterHotelOptionId,
+          },
+          include: {
+            roomTypePricings: true,
+          },
+        });
+
+        if (!departureHotelPricing) {
+          return NextResponse.json(
+            { error: "Selected hotel is not available for the chosen departure option", message: "Selected hotel is not available for the chosen departure option" },
+            { status: 400 }
+          );
+        }
+
+        // Validate add-ons
+        if (data.selectedAddonIds && Array.isArray(data.selectedAddonIds)) {
+          const invalidAddons = data.selectedAddonIds.filter(
+            (addonId) => !pkg.addons.some((addon) => addon.id === addonId && addon.isActive)
+          );
+          if (invalidAddons.length > 0) {
+            return NextResponse.json(
+              { error: "Invalid add-ons selected", message: "Invalid add-ons selected" },
+              { status: 400 }
+            );
+          }
+        }
+
+        // Calculate base price (optional, used as fallback only)
+        let basePrice = 0;
+        if (pkg.basePrice) {
+          basePrice = Number(pkg.basePrice);
+        } else if (pkg.priceRangeMin && pkg.priceRangeMax) {
+          basePrice =
+            (Number(pkg.priceRangeMin) + Number(pkg.priceRangeMax)) / 2;
+        }
+        // Note: basePrice can be 0 if not configured - we'll use room type pricing instead
+
+        // Calculate departure modifier
+        let departureModifier = 0;
+        if (departureOption.priceModifier) {
+          departureModifier = Number(departureOption.priceModifier);
+        }
+
+        // Calculate costs from RoomTypePricing (per-person pricing)
+        const numberOfAdults = data.numberOfAdults || data.numberOfGuests || 1;
+        const numberOfChildren6to12 = data.numberOfChildren6to12 || 0;
+        const numberOfChildren2to6 = data.numberOfChildren2to6 || 0;
+        const numberOfInfants = data.numberOfInfants || 0;
+
+        let adultCost = 0;
+        let children6to12Cost = 0;
+        let children2to6Cost = 0;
+        let infantsCost = 0;
+
+        if (data.roomType) {
         const roomTypePricing = departureHotelPricing.roomTypePricings.find(
           (rtp) => rtp.roomType === data.roomType
         );
@@ -345,42 +409,58 @@ export async function POST(request: NextRequest) {
             console.warn(`Infant price not configured for room type ${data.roomType}, infant cost will be 0`);
           }
         }
-      } else {
-        return NextResponse.json(
-          { error: "Room type is required", message: "Room type is required" },
-          { status: 400 }
-        );
+        } else {
+          return NextResponse.json(
+            { error: "Room type is required", message: "Room type is required" },
+            { status: 400 }
+          );
+        }
+
+        // Calculate total directly: sum of all costs
+        const totalTravelers = numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants;
+
+        // Calculate add-ons cost (multiplied by number of travelers)
+        let addonsCost = 0;
+        if (data.selectedAddonIds && Array.isArray(data.selectedAddonIds)) {
+          data.selectedAddonIds.forEach((addonId) => {
+            const addon = pkg.addons.find((a) => a.id === addonId);
+            if (addon) {
+              // Add-on price is per person, so multiply by total travelers
+              addonsCost += Number(addon.price) * totalTravelers;
+            }
+          });
+        }
+        
+        // Subtotal = adult cost + children cost (6-12) + children cost (2-6) + infants cost + addons cost
+        // Note: basePrice and departureModifier are not included in the new pricing architecture
+        // as pricing is defined per departure option and room type
+        const subtotal = adultCost + children6to12Cost + children2to6Cost + infantsCost + addonsCost;
+
+        // Apply discount to total if configured
+        let discount = 0;
+        if (pkg.discount && subtotal > 0) {
+          discount = (subtotal * Number(pkg.discount)) / 100;
+        }
+
+        totalAmount = subtotal - discount;
+        currency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
       }
-
-      // Calculate total directly: sum of all costs
-      const totalTravelers = numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants;
-
-      // Calculate add-ons cost (multiplied by number of travelers)
-      let addonsCost = 0;
-      if (data.selectedAddonIds && Array.isArray(data.selectedAddonIds)) {
-        data.selectedAddonIds.forEach((addonId) => {
-          const addon = pkg.addons.find((a) => a.id === addonId);
-          if (addon) {
-            // Add-on price is per person, so multiply by total travelers
-            addonsCost += Number(addon.price) * totalTravelers;
-          }
-        });
-      }
-      
-      // Subtotal = adult cost + children cost (6-12) + children cost (2-6) + infants cost + addons cost
-      // Note: basePrice and departureModifier are not included in the new pricing architecture
-      // as pricing is defined per departure option and room type
-      const subtotal = adultCost + children6to12Cost + children2to6Cost + infantsCost + addonsCost;
-
-      // Apply discount to total if configured
-      let discount = 0;
-      if (pkg.discount && subtotal > 0) {
-        discount = (subtotal * Number(pkg.discount)) / 100;
-      }
-
-      totalAmount = subtotal - discount;
-      currency = pkg.currency;
     }
+
+    const normalizedAdults = data.numberOfAdults || data.numberOfGuests || 1;
+    const normalizedChildren6to12 =
+      data.numberOfChildren6to12 || data.numberOfChildren || 0;
+    const normalizedChildren2to6 = data.numberOfChildren2to6 || 0;
+    const normalizedInfants = data.numberOfInfants || 0;
+    const fallbackGuestDetails = {
+      firstName: user.name?.split(" ")[0] || "Guest",
+      lastName: user.name?.split(" ").slice(1).join(" ") || "User",
+      email: user.email,
+      phone: "N/A",
+      specialRequests: data.pickupLocation
+        ? `Pickup location: ${data.pickupLocation}`
+        : undefined,
+    };
 
     const booking = await prisma.booking.create({
       data: {
@@ -394,15 +474,15 @@ export async function POST(request: NextRequest) {
         charterHotelOptionId: data.charterHotelOptionId || null,
         charterDepartureOptionId: data.charterDepartureOptionId || null,
         roomType: data.roomType || null,
-        numberOfAdults: data.numberOfAdults || null,
-        numberOfChildren6to12: data.numberOfChildren6to12 || null,
-        numberOfChildren2to6: data.numberOfChildren2to6 || null,
-        numberOfInfants: data.numberOfInfants || null,
+        numberOfAdults: normalizedAdults,
+        numberOfChildren6to12: normalizedChildren6to12 || null,
+        numberOfChildren2to6: normalizedChildren2to6 || null,
+        numberOfInfants: normalizedInfants || null,
         selectedAddonIds: data.selectedAddonIds ? (data.selectedAddonIds as any) : null,
         travelDate: data.travelDate,
         totalAmount,
         currency,
-        guestDetails: data.guestDetails as any,
+        guestDetails: (data.guestDetails || fallbackGuestDetails) as any,
         flightOfferData: data.flightOfferData || null,
         status: "PENDING",
         paymentStatus: "PENDING",

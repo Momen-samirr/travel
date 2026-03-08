@@ -30,15 +30,20 @@ export const bookingSchema = z.object({
     if (typeof val === "string") return new Date(val);
     return val;
   }),
-  guestDetails: z.union([legacyGuestDetailsSchema, flightGuestDetailsSchema]),
-  numberOfGuests: z.number().int().positive("Number of guests must be at least 1"),
+  guestDetails: z.union([legacyGuestDetailsSchema, flightGuestDetailsSchema]).optional().nullable(),
+  numberOfGuests: z.number().int().positive("Number of guests must be at least 1").optional(),
   // Flight-specific fields
   flightOfferId: z.string().optional(),
   flightOfferData: z.any().optional(), // Amadeus flight offer data
   addOns: z.any().optional(), // Add-ons like seats, baggage, etc.
   // Optional fields that can be provided for flight bookings
   totalAmount: z.number().positive().optional(), // Total amount (for flight bookings)
-  currency: z.string().optional(), // Currency (for flight bookings)
+  currency: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(/^[A-Z]{3}$/, "Currency must be a valid 3-letter code")
+    .optional(), // Currency (for flight bookings)
   // Charter Package specific fields
   charterHotelOptionId: z.string().optional().nullable(),
   charterDepartureOptionId: z.string().optional().nullable(),
@@ -48,6 +53,8 @@ export const bookingSchema = z.object({
   numberOfChildren2to6: z.number().int().min(0).optional(),
   numberOfInfants: z.number().int().min(0).optional(),
   selectedAddonIds: z.array(z.string()).optional(),
+  pickupLocation: z.string().optional(),
+  transferOptions: z.array(z.string()).optional(),
   // Legacy field for backward compatibility
   numberOfChildren: z.number().int().min(0).optional(),
 });

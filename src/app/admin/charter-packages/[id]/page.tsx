@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 import Link from "next/link";
 import { ArrowLeft, Edit, MapPin, Hotel, Plane, Package } from "lucide-react";
 
@@ -54,6 +55,7 @@ export default async function AdminCharterPackageDetailPage({
   if (!pkg) {
     notFound();
   }
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
 
   const includedServices = pkg.includedServices as string[];
   const excludedServices = pkg.excludedServices as string[];
@@ -106,9 +108,9 @@ export default async function AdminCharterPackageDetailPage({
             <div>
               <span className="font-semibold">Price: </span>
               {pkg.priceRangeMin && pkg.priceRangeMax
-                ? `${formatCurrency(Number(pkg.priceRangeMin), pkg.currency)} - ${formatCurrency(Number(pkg.priceRangeMax), pkg.currency)}`
+                ? `${formatCurrency(Number(pkg.priceRangeMin), packageCurrency)} - ${formatCurrency(Number(pkg.priceRangeMax), packageCurrency)}`
                 : pkg.basePrice
-                ? formatCurrency(Number(pkg.basePrice), pkg.currency)
+                ? formatCurrency(Number(pkg.basePrice), packageCurrency)
                 : "N/A"}
             </div>
             {pkg.discount && (
@@ -186,7 +188,10 @@ export default async function AdminCharterPackageDetailPage({
                     {option.priceModifier && (
                       <Badge variant="outline">
                         {Number(option.priceModifier) > 0 ? "+" : ""}
-                        {formatCurrency(Number(option.priceModifier), option.currency)}
+                        {formatCurrency(
+                          Number(option.priceModifier),
+                          normalizeCurrency(option.currency || packageCurrency)
+                        )}
                       </Badge>
                     )}
                   </div>
@@ -272,7 +277,10 @@ export default async function AdminCharterPackageDetailPage({
                       <Badge variant="destructive">Required</Badge>
                     )}
                     <span className="font-semibold">
-                      {formatCurrency(Number(addon.price), addon.currency)}
+                      {formatCurrency(
+                        Number(addon.price),
+                        normalizeCurrency(addon.currency || packageCurrency)
+                      )}
                     </span>
                   </div>
                 </div>

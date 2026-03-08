@@ -203,6 +203,7 @@ export async function POST(request: NextRequest) {
         excludedServices: data.excludedServices as any,
         excursionProgram: data.excursionProgram as any,
         requiredDocuments: data.requiredDocuments as any,
+        typeConfig: data.type === PackageType.INBOUND ? (data.typeConfig as any) : null,
       },
     });
 

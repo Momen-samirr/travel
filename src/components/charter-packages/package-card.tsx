@@ -4,10 +4,13 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils";
 import { MapPin, Calendar, Hotel, Plane } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
+import { PackageType } from "@/services/packages/types";
 
 interface CharterPackageCardProps {
   package: {
     id: string;
+    type?: PackageType;
     name: string;
     slug: string;
     destinationCountry: string;
@@ -25,17 +28,26 @@ interface CharterPackageCardProps {
       hotelOptions: number;
     };
   };
+  detailBasePath?: string;
 }
 
-export function CharterPackageCard({ package: pkg }: CharterPackageCardProps) {
+export function CharterPackageCard({ package: pkg, detailBasePath }: CharterPackageCardProps) {
+  const packageCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
+  const resolvedBasePath = detailBasePath
+    ? detailBasePath
+    : pkg.type === PackageType.INBOUND
+    ? "/inbound-packages"
+    : pkg.type === PackageType.REGULAR
+    ? "/regular-packages"
+    : "/charter-packages";
   const displayPrice = pkg.priceRangeMin && pkg.priceRangeMax
-    ? `${formatCurrency(pkg.priceRangeMin, pkg.currency)} - ${formatCurrency(pkg.priceRangeMax, pkg.currency)}`
+    ? `${formatCurrency(pkg.priceRangeMin, packageCurrency)} - ${formatCurrency(pkg.priceRangeMax, packageCurrency)}`
     : pkg.basePrice
-    ? formatCurrency(pkg.basePrice, pkg.currency)
+    ? formatCurrency(pkg.basePrice, packageCurrency)
     : "Contact for pricing";
 
   return (
-    <Link href={`/charter-packages/${pkg.slug}`}>
+    <Link href={`${resolvedBasePath}/${pkg.slug}`}>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
         <div className="relative w-full h-48">
           {pkg.mainImage ? (
@@ -46,7 +58,7 @@ export function CharterPackageCard({ package: pkg }: CharterPackageCardProps) {
               className="object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center">
+            <div className="w-full h-full bg-linear-to-br from-primary/20 to-primary/40 flex items-center justify-center">
               <MapPin className="h-12 w-12 text-primary/50" />
             </div>
           )}

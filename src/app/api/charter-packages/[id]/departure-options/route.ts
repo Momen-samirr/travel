@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { charterDepartureOptionSchema } from "@/lib/validations/charter-package";
+import {
+  charterDepartureOptionSchema,
+  departureHotelPricingSchema,
+} from "@/lib/validations/charter-package";
 import { requireAdmin } from "@/lib/clerk";
+import { z } from "zod";
 
 export async function GET(
   request: NextRequest,
@@ -34,10 +38,13 @@ export async function POST(
     const body = await request.json();
     const { hotelPricings, ...departureData } = body;
     const data = charterDepartureOptionSchema.parse(departureData);
+    const parsedHotelPricings = z
+      .array(departureHotelPricingSchema)
+      .parse(Array.isArray(hotelPricings) ? hotelPricings : []);
 
     // Validate hotel options belong to the same package
-    if (hotelPricings && Array.isArray(hotelPricings) && hotelPricings.length > 0) {
-      const hotelOptionIds = hotelPricings.map((hp: any) => hp.hotelOptionId);
+    if (parsedHotelPricings.length > 0) {
+      const hotelOptionIds = parsedHotelPricings.map((hp) => hp.hotelOptionId);
       const hotelOptions = await prisma.charterPackageHotelOption.findMany({
         where: {
           id: { in: hotelOptionIds },
@@ -68,32 +75,34 @@ export async function POST(
     });
 
     // Create hotel pricing records with room type pricings
-    if (hotelPricings && Array.isArray(hotelPricings) && hotelPricings.length > 0) {
-      for (const hotelPricing of hotelPricings) {
+    if (parsedHotelPricings.length > 0) {
+      for (const hotelPricing of parsedHotelPricings) {
         const departureHotelPricing = await prisma.departureHotelPricing.create({
           data: {
             departureOptionId: option.id,
             hotelOptionId: hotelPricing.hotelOptionId,
-            currency: hotelPricing.currency || "EGP",
+            currency: hotelPricing.currency,
           },
         });
 
         // Create room type pricing records
-        if (hotelPricing.roomTypePricings && Array.isArray(hotelPricing.roomTypePricings)) {
+        if (hotelPricing.roomTypePricings.length > 0) {
           await prisma.roomTypePricing.createMany({
-            data: hotelPricing.roomTypePricings.map((rtp: any) => ({
+            data: hotelPricing.roomTypePricings.map((rtp) => ({
               departureHotelPricingId: departureHotelPricing.id,
               roomType: rtp.roomType,
               adultPrice: rtp.adultPrice,
-              childPrice6to12: rtp.childPrice6to12 || null,
-              childPrice2to6: rtp.childPrice2to6 || null,
-              infantPrice: rtp.infantPrice || null,
-              currency: rtp.currency || hotelPricing.currency || "EGP",
+              childPrice6to12: rtp.childPrice6to12 ?? null,
+              childPrice2to6: rtp.childPrice2to6 ?? null,
+              infantPrice: rtp.infantPrice ?? null,
+              currency: rtp.currency,
             })),
           });
         }
       }
-      console.log(`Created ${hotelPricings.length} hotel pricing records for departure option ${option.id}`);
+      console.log(
+        `Created ${parsedHotelPricings.length} hotel pricing records for departure option ${option.id}`
+      );
     }
 
     const createdOption = await prisma.charterDepartureOption.findUnique({

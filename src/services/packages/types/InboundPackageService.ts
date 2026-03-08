@@ -13,6 +13,7 @@ import {
   PriceCalculation,
   ValidationResult,
 } from "../types";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export class InboundPackageService implements IPackageService {
   async searchPackages(params: PackageSearchParams): Promise<PackageSearchResult> {
@@ -204,7 +205,7 @@ export class InboundPackageService implements IPackageService {
         roomPrice,
         addonsPrice: addonsPrice + transferCost,
         totalPrice,
-        currency: pkg.currency,
+        currency: normalizeCurrency(pkg.currency || DEFAULT_CURRENCY),
         breakdown: [
           { label: "Base Price", amount: basePrice },
           { label: "Hotel & Room", amount: hotelPrice },
@@ -285,7 +286,7 @@ export class InboundPackageService implements IPackageService {
       basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
       priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
       priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
-      currency: pkg.currency,
+      currency: normalizeCurrency(pkg.currency || DEFAULT_CURRENCY),
       discount: pkg.discount ? Number(pkg.discount) : null,
       typeConfig: pkg.typeConfig,
       isActive: pkg.isActive,

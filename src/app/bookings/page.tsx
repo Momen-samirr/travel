@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 export default async function BookingsPage() {
   const user = await getCurrentUser();
@@ -70,8 +71,12 @@ export default async function BookingsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {bookings.map((booking) => (
-            <Card key={booking.id}>
+          {bookings.map((booking) => {
+            const bookingCurrency = normalizeCurrency(
+              booking.currency || DEFAULT_CURRENCY
+            );
+            return (
+              <Card key={booking.id}>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{getBookingTitle(booking)}</CardTitle>
@@ -108,7 +113,7 @@ export default async function BookingsPage() {
                       Booking Date: {formatDate(booking.bookingDate)}
                     </div>
                     <div className="text-lg font-semibold">
-                      {formatCurrency(Number(booking.totalAmount), booking.currency)}
+                      {formatCurrency(Number(booking.totalAmount), bookingCurrency)}
                     </div>
                   </div>
                   <Button asChild variant="outline">
@@ -116,8 +121,9 @@ export default async function BookingsPage() {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

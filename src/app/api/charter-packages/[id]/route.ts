@@ -4,6 +4,7 @@ import { charterPackageSchema } from "@/lib/validations/charter-package";
 import { requireAdmin } from "@/lib/clerk";
 import { logActivity, ActivityActions } from "@/lib/activity-log";
 import { slugify } from "@/lib/utils";
+import { PackageType } from "@/services/packages/types";
 
 export async function GET(
   request: NextRequest,
@@ -100,6 +101,7 @@ export async function PUT(
         excludedServices: data.excludedServices as any,
         excursionProgram: data.excursionProgram as any,
         requiredDocuments: data.requiredDocuments as any,
+        typeConfig: data.type === PackageType.INBOUND ? (data.typeConfig as any) : null,
       },
     });
 

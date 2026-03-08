@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { charterDepartureOptionSchema } from "@/lib/validations/charter-package";
+import {
+  charterDepartureOptionSchema,
+  departureHotelPricingSchema,
+} from "@/lib/validations/charter-package";
 import { requireAdmin } from "@/lib/clerk";
+import { z } from "zod";
 
 export async function GET(
   request: NextRequest,
@@ -60,10 +64,16 @@ export async function PUT(
     const body = await request.json();
     const { hotelPricings, ...departureData } = body;
     const data = charterDepartureOptionSchema.parse(departureData);
+    const parsedHotelPricings =
+      hotelPricings === undefined
+        ? undefined
+        : z.array(departureHotelPricingSchema).parse(
+            Array.isArray(hotelPricings) ? hotelPricings : []
+          );
 
     // Validate hotel options belong to the same package
-    if (hotelPricings && Array.isArray(hotelPricings) && hotelPricings.length > 0) {
-      const hotelOptionIds = hotelPricings.map((hp: any) => hp.hotelOptionId);
+    if (parsedHotelPricings && parsedHotelPricings.length > 0) {
+      const hotelOptionIds = parsedHotelPricings.map((hp) => hp.hotelOptionId);
       const hotelOptions = await prisma.charterPackageHotelOption.findMany({
         where: {
           id: { in: hotelOptionIds },
@@ -94,34 +104,34 @@ export async function PUT(
     });
 
     // Update hotel pricing records
-    if (hotelPricings !== undefined) {
+    if (parsedHotelPricings !== undefined) {
       // Delete existing pricing records (cascade will delete room type pricings)
       await prisma.departureHotelPricing.deleteMany({
         where: { departureOptionId: optionId },
       });
 
       // Create new pricing records
-      if (Array.isArray(hotelPricings) && hotelPricings.length > 0) {
-        for (const hotelPricing of hotelPricings) {
+      if (parsedHotelPricings.length > 0) {
+        for (const hotelPricing of parsedHotelPricings) {
           const departureHotelPricing = await prisma.departureHotelPricing.create({
             data: {
               departureOptionId: optionId,
               hotelOptionId: hotelPricing.hotelOptionId,
-              currency: hotelPricing.currency || "EGP",
+              currency: hotelPricing.currency,
             },
           });
 
           // Create room type pricing records
-          if (hotelPricing.roomTypePricings && Array.isArray(hotelPricing.roomTypePricings)) {
+          if (hotelPricing.roomTypePricings.length > 0) {
             await prisma.roomTypePricing.createMany({
-              data: hotelPricing.roomTypePricings.map((rtp: any) => ({
+              data: hotelPricing.roomTypePricings.map((rtp) => ({
                 departureHotelPricingId: departureHotelPricing.id,
                 roomType: rtp.roomType,
                 adultPrice: rtp.adultPrice,
-                childPrice6to12: rtp.childPrice6to12 || null,
-                childPrice2to6: rtp.childPrice2to6 || null,
-                infantPrice: rtp.infantPrice || null,
-                currency: rtp.currency || hotelPricing.currency || "EGP",
+                childPrice6to12: rtp.childPrice6to12 ?? null,
+                childPrice2to6: rtp.childPrice2to6 ?? null,
+                infantPrice: rtp.infantPrice ?? null,
+                currency: rtp.currency,
               })),
             });
           }

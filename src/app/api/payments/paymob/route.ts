@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
-import { createPaymobIframeSession } from "@/lib/paymob";
+import { createPaymobIframeSession, PaymobValidationError } from "@/lib/paymob";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,6 +14,12 @@ export async function POST(request: NextRequest) {
     }
 
     const { bookingId } = await request.json();
+    if (!bookingId || typeof bookingId !== "string") {
+      return NextResponse.json(
+        { error: "bookingId is required" },
+        { status: 400 }
+      );
+    }
 
     const booking = await prisma.booking.findUnique({
       where: { id: bookingId },
@@ -35,11 +41,18 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const amountCents = Math.round(Number(booking.totalAmount) * 100);
+    if (!Number.isFinite(amountCents) || amountCents <= 0) {
+      return NextResponse.json(
+        { error: "Invalid booking amount for payment" },
+        { status: 400 }
+      );
+    }
 
     const guestDetails = booking.guestDetails as Record<string, unknown>;
 
     const { iframeUrl, orderId } = await createPaymobIframeSession({
-      amountCents: Math.round(Number(booking.totalAmount) * 100),
+      amountCents,
       currency: booking.currency || "EGP",
       merchantReference: bookingId,
       customer: {
@@ -61,10 +74,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ paymentUrl: iframeUrl });
   } catch (error: unknown) {
     console.error("Error creating Paymob payment:", error);
+    if (error instanceof PaymobValidationError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 400 }
+      );
+    }
     const message = error instanceof Error ? error.message : "Failed to create payment";
+    const status = message.startsWith("Paymob:") ? 502 : 500;
     return NextResponse.json(
       { error: message },
-      { status: 500 }
+      { status }
     );
   }
 }

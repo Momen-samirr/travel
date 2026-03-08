@@ -5,6 +5,7 @@ import type { PackageData } from "@/components/charter-packages/CharterPackagesP
 import { charterPackageFiltersSchema } from "@/lib/validations/charter-package-filters";
 import { PackageType } from "@/services/packages/types";
 import { getPackageFilterOptions } from "@/lib/package-filter-options";
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 
 export const metadata = {
   title: "Inbound Travel Packages",
@@ -166,7 +167,7 @@ export default async function InboundPackagesPage({
     filterOptions = {
       countries: [],
       cities: {},
-      priceRange: { min: 0, max: 100000, currency: "EGP" },
+      priceRange: { min: 0, max: 100000, currency: DEFAULT_CURRENCY },
       durationRange: { minNights: 1, maxNights: 30, minDays: 1, maxDays: 31 },
       hotelRatings: [],
       packageTypes: [],
@@ -179,6 +180,8 @@ export default async function InboundPackagesPage({
       initialTotal={total}
       initialPage={page}
       initialFilterOptions={filterOptions ?? undefined}
+      packageType={PackageType.INBOUND}
+      basePath="/inbound-packages"
     />
   );
 }

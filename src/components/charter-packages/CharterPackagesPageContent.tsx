@@ -53,11 +53,15 @@ export function CharterPackagesPageContent({
   initialTotal,
   initialPage,
   initialFilterOptions,
+  packageType = PackageType.CHARTER,
+  basePath = "/charter-packages",
 }: {
   initialPackages: PackageData[];
   initialTotal: number;
   initialPage: number;
   initialFilterOptions?: FilterOptions;
+  packageType?: PackageType;
+  basePath?: string;
 }) {
   type SortBy = NonNullable<CharterPackageFilters["sortBy"]>;
   const router = useRouter();
@@ -72,7 +76,7 @@ export function CharterPackagesPageContent({
       limit: 12,
       sortBy: (params.get("sortBy") as SortBy) || "newest",
       hotelRating: [],
-      packageType: PackageType.CHARTER,
+      packageType,
     };
 
     if (params.get("destinationCountry")) {
@@ -187,14 +191,14 @@ export function CharterPackagesPageContent({
 
       const nextQuery = params.toString();
       const nextUrl = nextQuery
-        ? `/charter-packages?${nextQuery}`
-        : "/charter-packages";
+        ? `${basePath}?${nextQuery}`
+        : basePath;
       if (nextQuery === searchParamsKey) {
         return;
       }
       router.replace(nextUrl, { scroll: false });
     },
-    [router, searchParamsKey]
+    [basePath, router, searchParamsKey]
   );
 
   // Fetch packages with filters
@@ -284,13 +288,13 @@ export function CharterPackagesPageContent({
     (newFilters: CharterPackageFilters) => {
       const charterScopedFilters = {
         ...newFilters,
-        packageType: PackageType.CHARTER,
+        packageType,
       };
       setFilters(charterScopedFilters);
       setPage(1); // Reset to first page on filter change
       runDebouncedFetch({ ...charterScopedFilters, page: 1 });
     },
-    [runDebouncedFetch]
+    [packageType, runDebouncedFetch]
   );
 
   // Handle sort change
@@ -389,7 +393,7 @@ export function CharterPackagesPageContent({
             <>
               <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {packages.map((pkg) => (
-                  <CharterPackageCard key={pkg.id} package={pkg} />
+                  <CharterPackageCard key={pkg.id} package={pkg} detailBasePath={basePath} />
                 ))}
               </StaggerList>
 

@@ -1,40 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { SignInButton } from "@clerk/nextjs";
-import { LogIn, Hotel, Users, MapPin } from "lucide-react";
+import { LogIn, Users, MapPin } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
-import { Decimal } from "@prisma/client/runtime/library";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 interface InboundBookingFormProps {
   packageData: any;
 }
 
-/**
- * Inbound Booking Form - For packages without international flights
- * Includes: Hotel selection, room type, pickup location, transfer options, travelers
- * Does NOT include: Departure selection
- */
 export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
   const router = useRouter();
-  const { user, isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
   const { toast } = useToast();
 
-  const [hotelOptionId, setHotelOptionId] = useState<string | null>(null);
-  const [roomType, setRoomType] = useState<"SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD" | null>(null);
   const [numberOfAdults, setNumberOfAdults] = useState(1);
   const [numberOfChildren, setNumberOfChildren] = useState(0);
   const [numberOfInfants, setNumberOfInfants] = useState(0);
@@ -42,10 +33,35 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
   const [pickupLocation, setPickupLocation] = useState<string>("");
   const [transferOptions, setTransferOptions] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const packageCurrency = normalizeCurrency(packageData.currency || DEFAULT_CURRENCY);
 
-  // Get transfer options from typeConfig
+  const offerPrice =
+    Number(packageData.typeConfig?.offer?.currentPrice) ||
+    Number(packageData.basePrice || packageData.priceRangeMin || 0);
+
   const transferOptionsConfig = packageData.typeConfig?.transferOptions || [];
   const pickupLocations = packageData.typeConfig?.pickupLocations || [];
+  const totalTravelers = numberOfAdults + numberOfChildren + numberOfInfants;
+
+  const selectedAddonsTotal = useMemo(() => {
+    if (!Array.isArray(packageData.addons)) return 0;
+    return packageData.addons.reduce((sum: number, addon: any) => {
+      if (!selectedAddonIds.includes(addon.id)) return sum;
+      return sum + Number(addon.price || 0) * totalTravelers;
+    }, 0);
+  }, [packageData.addons, selectedAddonIds, totalTravelers]);
+
+  const selectedTransfersTotal = useMemo(() => {
+    if (!Array.isArray(transferOptionsConfig)) return 0;
+    return transferOptionsConfig.reduce((sum: number, option: any, index: number) => {
+      const optionId = option?.id || `transfer-${index}`;
+      if (!transferOptions.includes(optionId)) return sum;
+      return sum + Number(option?.price || 0);
+    }, 0);
+  }, [transferOptions, transferOptionsConfig]);
+
+  const baseComponentTotal = offerPrice * totalTravelers;
+  const grandTotal = baseComponentTotal + selectedAddonsTotal + selectedTransfersTotal;
 
   // Auto-select required add-ons
   useEffect(() => {
@@ -58,11 +74,6 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
     });
   }, [packageData.addons]);
 
-  // Reset room type when hotel changes
-  useEffect(() => {
-    setRoomType(null);
-  }, [hotelOptionId]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -70,15 +81,6 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
       toast({
         title: "Sign in required",
         description: "Please sign in to continue with your booking",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!hotelOptionId || !roomType) {
-      toast({
-        title: "Missing information",
-        description: "Please select a hotel and room type",
         variant: "destructive",
       });
       return;
@@ -93,10 +95,9 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
         body: JSON.stringify({
           bookingType: "CHARTER_PACKAGE",
           charterPackageId: packageData.id,
-          hotelOptionId,
-          roomType,
+          numberOfGuests: numberOfAdults + numberOfChildren + numberOfInfants,
           numberOfAdults,
-          numberOfChildren,
+          numberOfChildren6to12: numberOfChildren,
           numberOfInfants,
           selectedAddonIds,
           pickupLocation: pickupLocation || undefined,
@@ -165,54 +166,17 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Hotel className="h-5 w-5" />
-            Book Your Package
+            <Users className="h-5 w-5" />
+            Book This Inbound Package
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Hotel Selection */}
-          <div className="space-y-2">
-            <Label>Select Hotel *</Label>
-            <Select
-              value={hotelOptionId || ""}
-              onValueChange={setHotelOptionId}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Choose a hotel" />
-              </SelectTrigger>
-              <SelectContent>
-                {packageData.hotelOptions.map((option: any) => (
-                  <SelectItem key={option.id} value={option.id}>
-                    {option.hotel.name} - {option.hotel.city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="rounded-lg border p-3">
+            <p className="text-sm text-muted-foreground">Offer starts from</p>
+            <p className="text-xl font-semibold">
+              {formatCurrency(offerPrice, packageCurrency)}
+            </p>
           </div>
-
-          {/* Room Type Selection */}
-          {hotelOptionId && (
-            <div className="space-y-2">
-              <Label>Room Type *</Label>
-              <RadioGroup
-                value={roomType || ""}
-                onValueChange={(value) =>
-                  setRoomType(value as "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD")
-                }
-              >
-                <div className="flex flex-col gap-2">
-                  {["SINGLE", "DOUBLE", "TRIPLE", "QUAD"].map((type) => (
-                    <div key={type} className="flex items-center space-x-2">
-                      <RadioGroupItem value={type} id={type} />
-                      <Label htmlFor={type} className="font-normal cursor-pointer">
-                        {type.charAt(0) + type.slice(1).toLowerCase()}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </RadioGroup>
-            </div>
-          )}
 
           {/* Pickup Location (for Inbound) */}
           {pickupLocations.length > 0 && (
@@ -227,8 +191,11 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
                 </SelectTrigger>
                 <SelectContent>
                   {pickupLocations.map((location: any) => (
-                    <SelectItem key={location.id || location} value={location.id || location}>
-                      {location.name || location}
+                    <SelectItem
+                      key={(location?.id || location) as string}
+                      value={(location?.id || location) as string}
+                    >
+                      {location?.name || location}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -241,34 +208,37 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
             <div className="space-y-2">
               <Label>Transfer Options</Label>
               <div className="space-y-2">
-                {transferOptionsConfig.map((option: any) => (
-                  <div key={option.id} className="flex items-center space-x-2">
+                {transferOptionsConfig.map((option: any, index: number) => {
+                  const optionId = option?.id || `transfer-${index}`;
+                  const optionName = option?.name || optionId;
+                  return (
+                  <div key={optionId} className="flex items-center space-x-2">
                     <Checkbox
-                      id={option.id}
-                      checked={transferOptions.includes(option.id)}
+                      id={optionId}
+                      checked={transferOptions.includes(optionId)}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setTransferOptions([...transferOptions, option.id]);
+                          setTransferOptions([...transferOptions, optionId]);
                         } else {
                           setTransferOptions(
-                            transferOptions.filter((id) => id !== option.id)
+                            transferOptions.filter((id) => id !== optionId)
                           );
                         }
                       }}
                     />
                     <Label
-                      htmlFor={option.id}
+                      htmlFor={optionId}
                       className="font-normal cursor-pointer flex-1"
                     >
-                      {option.name}
+                      {optionName}
                       {option.price && (
                         <span className="text-muted-foreground ml-2">
-                          (+{formatCurrency(option.price, packageData.currency)})
+                          (+{formatCurrency(option.price, packageCurrency)})
                         </span>
                       )}
                     </Label>
                   </div>
-                ))}
+                )})}
               </div>
             </div>
           )}
@@ -351,7 +321,10 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
                         </Badge>
                       )}
                       <span className="text-muted-foreground ml-2">
-                        {formatCurrency(Number(addon.price), addon.currency)}
+                        {formatCurrency(
+                          Number(addon.price),
+                          normalizeCurrency(addon.currency || packageCurrency)
+                        )}
                       </span>
                     </Label>
                   </div>
@@ -360,9 +333,30 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
             </div>
           )}
 
+          <div className="rounded-lg border p-4 space-y-2 bg-muted/30">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                Base ({totalTravelers} traveler{totalTravelers === 1 ? "" : "s"})
+              </span>
+              <span>{formatCurrency(baseComponentTotal, packageCurrency)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Add-ons</span>
+              <span>{formatCurrency(selectedAddonsTotal, packageCurrency)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Transfers</span>
+              <span>{formatCurrency(selectedTransfersTotal, packageCurrency)}</span>
+            </div>
+            <div className="border-t pt-2 flex items-center justify-between font-semibold">
+              <span>Total</span>
+              <span>{formatCurrency(grandTotal, packageCurrency)}</span>
+            </div>
+          </div>
+
           <Button
             type="submit"
-            disabled={submitting || !hotelOptionId || !roomType}
+            disabled={submitting}
             className="w-full"
             size="lg"
           >

@@ -11,6 +11,7 @@ import { FadeInSection } from "@/components/motion/fade-in-section";
 import { StaggerList, StaggerItem } from "@/components/motion/stagger-list";
 import { motion } from "framer-motion";
 import { PackageType } from "@/services/packages/types";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
 
 interface CharterPackage {
   id: string;
@@ -76,11 +77,14 @@ export function FeaturedPackagesSection({
           {packages.slice(0, 6).map((pkg) => {
             const gallery = pkg.gallery as string[];
             const mainImage = pkg.mainImage || gallery?.[0] || "/placeholder-tour.jpg";
+            const packageCurrency = normalizeCurrency(
+              pkg.currency || DEFAULT_CURRENCY
+            );
             const displayPrice =
               pkg.priceRangeMin && pkg.priceRangeMax
-                ? `${formatCurrency(pkg.priceRangeMin, pkg.currency)} - ${formatCurrency(pkg.priceRangeMax, pkg.currency)}`
+                ? `${formatCurrency(pkg.priceRangeMin, packageCurrency)} - ${formatCurrency(pkg.priceRangeMax, packageCurrency)}`
                 : pkg.basePrice
-                ? formatCurrency(pkg.basePrice, pkg.currency)
+                ? formatCurrency(pkg.basePrice, packageCurrency)
                 : "Contact for pricing";
 
             const getPackageUrl = () => {

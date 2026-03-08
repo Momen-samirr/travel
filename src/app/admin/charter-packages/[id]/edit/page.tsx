@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { CharterPackageForm } from "@/components/admin/charter-package-form";
 import { notFound } from "next/navigation";
 import { PackageType } from "@/services/packages/types";
+import { normalizeCurrency } from "@/lib/currency";
 
 export default async function EditCharterPackagePage({
   params,
@@ -37,6 +38,7 @@ export default async function EditCharterPackagePage({
         initialData={{
           ...pkg,
           type: pkg.type as PackageType,
+          currency: normalizeCurrency(pkg.currency),
           basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
           priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
           priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
@@ -51,14 +53,14 @@ export default async function EditCharterPackagePage({
             priceModifier: opt.priceModifier ? Number(opt.priceModifier) : null,
             hotelPricings: opt.hotelPricings.map((hp) => ({
               hotelOptionId: hp.hotelOptionId,
-              currency: hp.currency,
+              currency: normalizeCurrency(hp.currency),
               roomTypePricings: hp.roomTypePricings.map((rtp) => ({
                 roomType: rtp.roomType as "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD",
                 adultPrice: Number(rtp.adultPrice),
                 childPrice6to12: rtp.childPrice6to12 ? Number(rtp.childPrice6to12) : null,
                 childPrice2to6: rtp.childPrice2to6 ? Number(rtp.childPrice2to6) : null,
                 infantPrice: rtp.infantPrice ? Number(rtp.infantPrice) : null,
-                currency: rtp.currency,
+                currency: normalizeCurrency(rtp.currency),
               })),
             })),
           })),
@@ -68,6 +70,7 @@ export default async function EditCharterPackagePage({
           addons: pkg.addons.map((addon) => ({
             ...addon,
             price: Number(addon.price),
+            currency: normalizeCurrency(addon.currency),
           })),
         }}
       />

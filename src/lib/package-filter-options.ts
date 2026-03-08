@@ -1,5 +1,6 @@
 import { PackageType } from "@/services/packages/types";
 import { prisma } from "./prisma";
+import { DEFAULT_CURRENCY, normalizeCurrency } from "./currency";
 
 export interface PackageFilterOptions {
   countries: string[];
@@ -30,7 +31,11 @@ function withFallbackDefaults(data: Partial<PackageFilterOptions>): PackageFilte
   return {
     countries: data.countries ?? [],
     cities: data.cities ?? {},
-    priceRange: data.priceRange ?? { min: 0, max: 100000, currency: "EGP" },
+    priceRange: data.priceRange ?? {
+      min: 0,
+      max: 100000,
+      currency: DEFAULT_CURRENCY,
+    },
     durationRange:
       data.durationRange ?? {
         minNights: 1,
@@ -52,6 +57,7 @@ async function buildFilterOptions(packageType?: PackageType): Promise<PackageFil
     select: {
       destinationCountry: true,
       destinationCity: true,
+      currency: true,
       priceRangeMin: true,
       priceRangeMax: true,
       basePrice: true,
@@ -110,13 +116,19 @@ async function buildFilterOptions(packageType?: PackageType): Promise<PackageFil
     new Set(packages.map((pkg) => pkg.type))
   ) as PackageType[];
 
+  const currencies = Array.from(
+    new Set(packages.map((pkg) => normalizeCurrency(pkg.currency)))
+  );
+  const resolvedCurrency =
+    currencies.length === 1 ? currencies[0] : DEFAULT_CURRENCY;
+
   return withFallbackDefaults({
     countries,
     cities: citiesByCountry,
     priceRange: {
       min: prices.length > 0 ? Math.min(...prices) : 0,
       max: prices.length > 0 ? Math.max(...prices) : 100000,
-      currency: "EGP",
+      currency: resolvedCurrency,
     },
     durationRange: {
       minNights: nights.length > 0 ? Math.min(...nights) : 1,
