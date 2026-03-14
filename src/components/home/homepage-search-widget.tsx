@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plane, Package, Search } from "lucide-react";
 import { motion } from "framer-motion";
+
+const FLIGHTS_EXTERNAL_URL = "https://tishoury.amadeusonlinesuite.com/flights?lc=EN";
 
 export function HomepageSearchWidget() {
   const router = useRouter();
@@ -39,13 +42,15 @@ export function HomepageSearchWidget() {
           <div className="space-y-4">
             {activeTab === "flights" && (
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button
-                  onClick={() => handleQuickSearch("flights")}
-                  size="lg"
-                  className="flex-1 h-14 text-base rounded-xl"
-                >
-                  <Search className="mr-2 h-5 w-5" />
-                  Search Flights
+                <Button asChild size="lg" className="flex-1 h-14 text-base rounded-xl">
+                  <Link
+                    href={FLIGHTS_EXTERNAL_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Search className="mr-2 h-5 w-5" />
+                    Search Flights
+                  </Link>
                 </Button>
               </div>
             )}

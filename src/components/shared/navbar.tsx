@@ -12,7 +12,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 const navLinks = [
-  { href: "/flights", label: "Flights" },
+  {
+    href: "https://tishoury.amadeusonlinesuite.com/flights?lc=EN",
+    label: "Flights",
+    external: true,
+  },
   { href: "/charter-packages", label: "Charter Packages" },
   { href: "/inbound-packages", label: "Inbound Packages" },
   { href: "/regular-packages", label: "Regular Packages" },
@@ -107,7 +111,8 @@ export function Navbar() {
           <div className="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => {
               const isActive =
-                pathname === link.href || pathname?.startsWith(link.href + "/");
+                !("external" in link && link.external) &&
+                (pathname === link.href || pathname?.startsWith(link.href + "/"));
               return (
                 <motion.div
                   key={link.href}
@@ -116,6 +121,9 @@ export function Navbar() {
                 >
                   <Link
                     href={link.href}
+                    {...("external" in link && link.external
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
                     className={cn(
                       "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ease-in-out relative",
                       isActive
@@ -211,8 +219,9 @@ export function Navbar() {
                 <div className="flex flex-col gap-2">
                   {navLinks.map((link, index) => {
                     const isActive =
-                      pathname === link.href ||
-                      pathname?.startsWith(link.href + "/");
+                      !("external" in link && link.external) &&
+                      (pathname === link.href ||
+                        pathname?.startsWith(link.href + "/"));
                     return (
                       <motion.div
                         key={link.href}
@@ -222,6 +231,9 @@ export function Navbar() {
                       >
                         <Link
                           href={link.href}
+                          {...("external" in link && link.external
+                            ? { target: "_blank", rel: "noopener noreferrer" }
+                            : {})}
                           onClick={() => setMobileMenuOpen(false)}
                           className={cn(
                             "px-4 py-3 text-base font-medium rounded-lg transition-all duration-300 ease-in-out block",

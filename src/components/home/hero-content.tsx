@@ -49,7 +49,11 @@ export function HeroContent() {
         className="flex flex-wrap justify-center gap-4"
       >
         <Button asChild size="lg" className="rounded-full px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all duration-300 ease-in-out">
-          <Link href="/flights">
+          <Link
+            href="https://tishoury.amadeusonlinesuite.com/flights?lc=EN"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             <Plane className="mr-2 h-5 w-5" />
             Search Flights
           </Link>
