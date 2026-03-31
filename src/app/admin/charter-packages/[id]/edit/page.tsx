@@ -24,6 +24,7 @@ export default async function EditCharterPackagePage({
       },
       hotelOptions: true,
       addons: true,
+      priceOverrides: true,
     },
   });
 
@@ -71,6 +72,12 @@ export default async function EditCharterPackagePage({
             ...addon,
             price: Number(addon.price),
             currency: normalizeCurrency(addon.currency),
+          })),
+          priceOverrides: pkg.priceOverrides.map((override) => ({
+            currency: normalizeCurrency(override.currency),
+            basePrice: override.basePrice ? Number(override.basePrice) : null,
+            priceRangeMin: override.priceRangeMin ? Number(override.priceRangeMin) : null,
+            priceRangeMax: override.priceRangeMax ? Number(override.priceRangeMax) : null,
           })),
         }}
       />
