@@ -6,7 +6,7 @@ export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
 
 export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 
-export type PaymentMethod = "BANK" | "PAYMOB";
+export type PaymentMethod = "BANK" | "PAYMOB" | "PAYIN";
 
 export type ComplaintStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED" | "CLOSED";
 

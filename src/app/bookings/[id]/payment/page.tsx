@@ -26,7 +26,9 @@ export default function PaymentPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const bookingId = params.id as string;
-  const [paymentMethod, setPaymentMethod] = useState<"paymob" | "bank">("paymob");
+  const [paymentMethod, setPaymentMethod] = useState<"paymob" | "bank">(
+    "paymob",
+  );
   const [loading, setLoading] = useState(false);
   const [bankDetails, setBankDetails] = useState<BankDetails | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
@@ -60,7 +62,7 @@ export default function PaymentPage() {
     try {
       const endpoint =
         paymentMethod === "paymob"
-          ? "/api/payments/paymob"
+          ? "/api/payments/online"
           : "/api/payments/bank";
 
       const response = await fetch(endpoint, {
@@ -89,7 +91,8 @@ export default function PaymentPage() {
         setBankDetails(data.bankDetails);
         toast({
           title: "Bank transfer instructions",
-          description: data.message || "Please transfer the amount to the account below.",
+          description:
+            data.message || "Please transfer the amount to the account below.",
           variant: "default",
         });
       }
@@ -97,7 +100,8 @@ export default function PaymentPage() {
       console.error("Error initiating payment:", error);
       toast({
         title: "Failed to initiate payment",
-        description: error instanceof Error ? error.message : "Please try again later.",
+        description:
+          error instanceof Error ? error.message : "Please try again later.",
         variant: "destructive",
       });
     } finally {
@@ -130,9 +134,9 @@ export default function PaymentPage() {
                 >
                   <CreditCard className="h-5 w-5" />
                   <div>
-                    <div className="font-semibold">Paymob</div>
+                    <div className="font-semibold">Online Card Payment</div>
                     <div className="text-sm text-gray-600">
-                      Pay with credit/debit card
+                      Automatically selects PayIn for USD and Paymob for EGP
                     </div>
                   </div>
                 </Label>
@@ -158,7 +162,9 @@ export default function PaymentPage() {
             {bankDetails ? (
               <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Transfer the amount below and use the reference when paying. Your booking will be confirmed once we receive and verify the payment.
+                  Transfer the amount below and use the reference when paying.
+                  Your booking will be confirmed once we receive and verify the
+                  payment.
                 </p>
                 <div className="grid gap-2 text-sm">
                   <div className="flex justify-between items-center gap-2">
@@ -169,9 +175,18 @@ export default function PaymentPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => copyToClipboard(bankDetails.accountName, "accountName")}
+                        onClick={() =>
+                          copyToClipboard(
+                            bankDetails.accountName,
+                            "accountName",
+                          )
+                        }
                       >
-                        {copiedField === "accountName" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedField === "accountName" ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
                       </Button>
                     </span>
                   </div>
@@ -183,9 +198,15 @@ export default function PaymentPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => copyToClipboard(bankDetails.iban, "iban")}
+                        onClick={() =>
+                          copyToClipboard(bankDetails.iban, "iban")
+                        }
                       >
-                        {copiedField === "iban" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedField === "iban" ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
                       </Button>
                     </span>
                   </div>
@@ -207,9 +228,18 @@ export default function PaymentPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => copyToClipboard(bankDetails.referenceFormat, "reference")}
+                        onClick={() =>
+                          copyToClipboard(
+                            bankDetails.referenceFormat,
+                            "reference",
+                          )
+                        }
                       >
-                        {copiedField === "reference" ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                        {copiedField === "reference" ? (
+                          <Check className="h-3.5 w-3.5" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
                       </Button>
                     </span>
                   </div>
@@ -224,7 +254,11 @@ export default function PaymentPage() {
                 className="flex-1"
                 size="lg"
               >
-                {loading ? "Processing..." : bankDetails ? "Show instructions again" : "Proceed to Payment"}
+                {loading
+                  ? "Processing..."
+                  : bankDetails
+                    ? "Show instructions again"
+                    : "Proceed to Payment"}
               </Button>
               <Button
                 variant="outline"

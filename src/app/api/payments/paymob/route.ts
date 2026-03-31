@@ -41,6 +41,14 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+    const normalizedCurrency = (booking.currency || "EGP").trim().toUpperCase();
+    if (normalizedCurrency === "USD") {
+      return NextResponse.json(
+        { error: "USD payments are handled by PayIn. Use /api/payments/online or /api/payments/payin." },
+        { status: 400 }
+      );
+    }
+
     const amountCents = Math.round(Number(booking.totalAmount) * 100);
     if (!Number.isFinite(amountCents) || amountCents <= 0) {
       return NextResponse.json(
@@ -53,7 +61,7 @@ export async function POST(request: NextRequest) {
 
     const { iframeUrl, orderId } = await createPaymobIframeSession({
       amountCents,
-      currency: booking.currency || "EGP",
+      currency: normalizedCurrency,
       merchantReference: bookingId,
       customer: {
         first_name: (guestDetails?.firstName as string) || user.name?.split(" ")[0] || "",

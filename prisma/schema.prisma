@@ -38,6 +38,7 @@ enum PaymentStatus {
 enum PaymentMethod {
   BANK
   PAYMOB
+  PAYIN
 }
 
 enum ComplaintStatus {

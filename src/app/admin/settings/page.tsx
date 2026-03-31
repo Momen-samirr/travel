@@ -2,7 +2,6 @@ import { requireAdmin } from "@/lib/clerk";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Eye, EyeOff } from "lucide-react";
 import { SettingsConfig } from "@/components/admin/settings-config";
 
 export const runtime = "nodejs";
@@ -31,6 +30,9 @@ export default async function AdminSettingsPage() {
         { label: "Paymob HMAC Secret", value: process.env.PAYMOB_HMAC_SECRET },
         { label: "Paymob Public Key (unused – Unified Checkout only)", value: process.env.PAYMOB_PUBLIC_KEY },
         { label: "Paymob Secret Key (unused – Unified Checkout only)", value: process.env.PAYMOB_SECRET_KEY },
+        { label: "PayIn Base URL", value: process.env.PAYIN_BASE_URL },
+        { label: "PayIn Public Token", value: process.env.PAYIN_PUBLIC_TOKEN },
+        { label: "PayIn Hash Token", value: process.env.PAYIN_HASH_TOKEN },
         { label: "Bank Profile ID", value: process.env.BANK_PROFILE_ID },
         { label: "Bank Access Key", value: process.env.BANK_ACCESS_KEY },
         { label: "Bank Secret Key", value: process.env.BANK_SECRET_KEY },
