@@ -68,6 +68,12 @@ enum PackageType {
   REGULAR
 }
 
+enum PriceSource {
+  BASE
+  FX
+  OVERRIDE
+}
+
 model User {
   id          String    @id @default(cuid())
   clerkId     String    @unique
@@ -119,6 +125,7 @@ model Tour {
 
   bookings Booking[]
   reviews  Review[]
+  priceOverrides TourPriceOverride[]
 
   @@index([slug])
   @@index([isActive])
@@ -209,6 +216,14 @@ model Booking {
   status                   BookingStatus  @default(PENDING)
   totalAmount              Decimal        @db.Decimal(10, 2)
   currency                 String         @default("EGP")
+  quoteSourceAmount        Decimal?       @db.Decimal(10, 2)
+  quoteSourceCurrency      String?
+  quotePreferredCurrency   String?
+  quoteFxRate              Decimal?       @db.Decimal(14, 6)
+  quotePriceSource         PriceSource?
+  quoteSubtotalAmount      Decimal?       @db.Decimal(10, 2)
+  quoteAddonsAmount        Decimal?       @db.Decimal(10, 2)
+  quoteDiscountAmount      Decimal?       @db.Decimal(10, 2)
   paymentStatus            PaymentStatus  @default(PENDING)
   paymentMethod            PaymentMethod?
   paymentTransactionId     String?
@@ -248,6 +263,20 @@ model Booking {
   @@index([paymentStatus])
   @@index([bookingType])
   @@index([amadeusStatus])
+}
+
+model ExchangeRate {
+  id           String   @id @default(cuid())
+  fromCurrency String
+  toCurrency   String
+  rate         Decimal  @db.Decimal(14, 6)
+  source       String?  @default("MANUAL")
+  validAt      DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([fromCurrency, toCurrency])
+  @@index([fromCurrency, toCurrency])
 }
 
 model WebhookIdempotency {
@@ -405,6 +434,7 @@ model CharterTravelPackage {
   requiredDocuments Json
   bookings          Booking[]
   reviews           CharterPackageReview[]
+  priceOverrides    CharterPackagePriceOverride[]
 
   @@index([type])
   @@index([slug])
@@ -415,6 +445,37 @@ model CharterTravelPackage {
   @@index([isActive, priceRangeMin, priceRangeMax])
   @@index([isActive, nights, days])
   @@index([isActive, type, destinationCountry])
+}
+
+model CharterPackagePriceOverride {
+  id           String               @id @default(cuid())
+  packageId    String
+  currency     String
+  basePrice    Decimal?             @db.Decimal(10, 2)
+  priceRangeMin Decimal?            @db.Decimal(10, 2)
+  priceRangeMax Decimal?            @db.Decimal(10, 2)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  package CharterTravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, currency])
+  @@index([currency])
+}
+
+model TourPriceOverride {
+  id           String   @id @default(cuid())
+  tourId        String
+  currency      String
+  price         Decimal? @db.Decimal(10, 2)
+  discountPrice Decimal? @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  tour Tour @relation(fields: [tourId], references: [id], onDelete: Cascade)
+
+  @@unique([tourId, currency])
+  @@index([currency])
 }
 
 model CharterDepartureOption {

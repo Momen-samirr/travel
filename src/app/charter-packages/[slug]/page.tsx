@@ -61,6 +61,7 @@ export default async function CharterPackageDetailPage({
       addons: {
         where: { isActive: true },
       },
+      priceOverrides: true,
       reviews: {
         where: { isApproved: true },
         include: {
@@ -99,6 +100,7 @@ export default async function CharterPackageDetailPage({
         addons: {
           where: { isActive: true },
         },
+        priceOverrides: true,
         reviews: {
           where: { isApproved: true },
           include: {
@@ -467,6 +469,12 @@ export default async function CharterPackageDetailPage({
                   addons: pkg.addons.map((addon) => ({
                     ...addon,
                     price: Number(addon.price),
+                  })),
+                  priceOverrides: pkg.priceOverrides.map((override) => ({
+                    ...override,
+                    basePrice: override.basePrice ? Number(override.basePrice) : null,
+                    priceRangeMin: override.priceRangeMin ? Number(override.priceRangeMin) : null,
+                    priceRangeMax: override.priceRangeMax ? Number(override.priceRangeMax) : null,
                   })),
                 }}
               />

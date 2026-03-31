@@ -128,6 +128,7 @@ export async function GET(request: NextRequest) {
         take: limit,
         orderBy,
         include: {
+          priceOverrides: true,
           _count: {
             select: {
               departureOptions: true,
@@ -148,6 +149,12 @@ export async function GET(request: NextRequest) {
       priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
       priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
       discount: pkg.discount ? Number(pkg.discount) : null,
+      priceOverrides: pkg.priceOverrides.map((override) => ({
+        ...override,
+        basePrice: override.basePrice ? Number(override.basePrice) : null,
+        priceRangeMin: override.priceRangeMin ? Number(override.priceRangeMin) : null,
+        priceRangeMax: override.priceRangeMax ? Number(override.priceRangeMax) : null,
+      })),
     }));
 
     return NextResponse.json({
@@ -194,9 +201,11 @@ export async function POST(request: NextRequest) {
       slug = uniqueSlug;
     }
 
+    const { priceOverrides = [], ...packagePayload } = data;
+
     const pkg = await prisma.charterTravelPackage.create({
       data: {
-        ...data,
+        ...packagePayload,
         slug: slug || slugify(data.name),
         gallery: data.gallery as any,
         includedServices: data.includedServices as any,
@@ -204,6 +213,17 @@ export async function POST(request: NextRequest) {
         excursionProgram: data.excursionProgram as any,
         requiredDocuments: data.requiredDocuments as any,
         typeConfig: data.type === PackageType.INBOUND ? (data.typeConfig as any) : null,
+        priceOverrides: {
+          create: priceOverrides.map((override) => ({
+            currency: override.currency,
+            basePrice: override.basePrice ?? null,
+            priceRangeMin: override.priceRangeMin ?? null,
+            priceRangeMax: override.priceRangeMax ?? null,
+          })),
+        },
+      },
+      include: {
+        priceOverrides: true,
       },
     });
 

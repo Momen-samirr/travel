@@ -6,6 +6,13 @@ const currencySchema = z.enum(SUPPORTED_CURRENCIES, {
   error: "Currency selection is required",
 });
 
+const packagePriceOverrideSchema = z.object({
+  currency: currencySchema,
+  basePrice: z.coerce.number().positive().optional().nullable(),
+  priceRangeMin: z.coerce.number().positive().optional().nullable(),
+  priceRangeMax: z.coerce.number().positive().optional().nullable(),
+});
+
 const inboundItineraryItemSchema = z.object({
   dayLabel: z.string().max(120).default(""),
   title: z.string().max(200).default(""),
@@ -69,6 +76,7 @@ export const charterPackageSchema = z.object({
   excursionProgram: z.array(z.string()).min(0),
   requiredDocuments: z.array(z.string()).min(0),
   typeConfig: z.unknown().optional().nullable(),
+  priceOverrides: z.array(packagePriceOverrideSchema).optional().default([]),
 }).superRefine((data, ctx) => {
   if (data.type !== PackageType.INBOUND) {
     return;
@@ -87,6 +95,7 @@ export const charterPackageSchema = z.object({
 });
 
 export type CharterPackageInput = z.infer<typeof charterPackageSchema>;
+export type PackagePriceOverrideInput = z.infer<typeof packagePriceOverrideSchema>;
 
 export const charterPackageHotelOptionSchema = z.object({
   hotelId: z.string().min(1, "Hotel is required"),

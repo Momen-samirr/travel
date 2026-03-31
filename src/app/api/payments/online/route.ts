@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
 import { createPaymobIframeSession, PaymobValidationError } from "@/lib/paymob";
 import { createPayinCheckout, PayinValidationError } from "@/lib/payin";
+import { ensureProviderSupportsCurrency, resolveOnlineProvider } from "@/lib/payment-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const currency = (booking.currency || "EGP").trim().toUpperCase();
+    const provider = resolveOnlineProvider(currency);
     const guestDetails = (booking.guestDetails || {}) as Record<string, unknown>;
     const firstName = (guestDetails.firstName as string) || user.name?.split(" ")[0] || "Guest";
     const lastName =
@@ -42,7 +44,8 @@ export async function POST(request: NextRequest) {
     const email = (guestDetails.email as string) || user.email || "";
     const phoneNumber = (guestDetails.phone as string) || user.phone || "";
 
-    if (currency === "USD") {
+    if (provider === "PAYIN") {
+      ensureProviderSupportsCurrency("PAYIN", currency);
       const { checkoutUrl, invoiceId } = await createPayinCheckout({
         orderTitle: `Booking ${booking.id}`,
         orderAmount: amount,
@@ -68,6 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ paymentUrl: checkoutUrl, provider: "PAYIN" });
     }
 
+    ensureProviderSupportsCurrency("PAYMOB", currency);
     const amountCents = Math.round(amount * 100);
     const { iframeUrl, orderId } = await createPaymobIframeSession({
       amountCents,

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { SignInButton } from "@clerk/nextjs";
 import { LogIn } from "lucide-react";
+import { CURRENCY_COOKIE_KEY, DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface CharterPackageBookingFormProps {
   packageId: string;
@@ -52,6 +53,10 @@ export function CharterPackageBookingForm({
           bookingType: "CHARTER_PACKAGE",
           charterPackageId: packageId,
           numberOfGuests: 1,
+          preferredCurrency:
+            (typeof window !== "undefined" &&
+              window.localStorage.getItem(CURRENCY_COOKIE_KEY)) ||
+            DEFAULT_CURRENCY,
           guestDetails: {
             firstName: user.firstName || "",
             lastName: user.lastName || "",

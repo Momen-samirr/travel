@@ -87,6 +87,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: "Already processed" });
     }
 
+    const webhookCurrency = (
+      transaction.currency ||
+      order.currency ||
+      transaction.currency_iso
+    )?.toString()?.toUpperCase?.() || null;
+    const bookingCurrency = (booking.currency || "").toUpperCase();
+    if (webhookCurrency && webhookCurrency !== bookingCurrency) {
+      await logActivity({
+        action: "WEBHOOK_ERROR",
+        entityType: "Webhook",
+        entityId: booking.id,
+        details: {
+          source: "PAYMOB",
+          error: "Currency mismatch",
+          bookingCurrency,
+          webhookCurrency,
+          orderId: order.id.toString(),
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return NextResponse.json({ success: false, error: "Currency mismatch" }, { status: 200 });
+    }
+
+    const paidAmountCents =
+      Number(transaction.amount_cents ?? order.amount_cents ?? transaction.amount);
+    const expectedAmountCents = Math.round(Number(booking.totalAmount) * 100);
+    if (Number.isFinite(paidAmountCents) && paidAmountCents > 0 && paidAmountCents !== expectedAmountCents) {
+      await logActivity({
+        action: "WEBHOOK_ERROR",
+        entityType: "Webhook",
+        entityId: booking.id,
+        details: {
+          source: "PAYMOB",
+          error: "Amount mismatch",
+          paidAmountCents,
+          expectedAmountCents,
+          orderId: order.id.toString(),
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return NextResponse.json({ success: false, error: "Amount mismatch" }, { status: 200 });
+    }
+
     // Update booking based on transaction status
     if (transaction.success === true) {
       // Log activity before updating

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
 import { createPaymobIframeSession, PaymobValidationError } from "@/lib/paymob";
+import { ensureProviderSupportsCurrency } from "@/lib/payment-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +43,9 @@ export async function POST(request: NextRequest) {
       );
     }
     const normalizedCurrency = (booking.currency || "EGP").trim().toUpperCase();
-    if (normalizedCurrency === "USD") {
+    try {
+      ensureProviderSupportsCurrency("PAYMOB", normalizedCurrency);
+    } catch {
       return NextResponse.json(
         { error: "USD payments are handled by PayIn. Use /api/payments/online or /api/payments/payin." },
         { status: 400 }

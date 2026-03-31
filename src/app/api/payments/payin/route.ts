@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/clerk";
 import { prisma } from "@/lib/prisma";
 import { createPayinCheckout, PayinValidationError } from "@/lib/payin";
+import { ensureProviderSupportsCurrency } from "@/lib/payment-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +30,9 @@ export async function POST(request: NextRequest) {
     }
 
     const currency = (booking.currency || "").trim().toUpperCase();
-    if (currency !== "USD") {
+    try {
+      ensureProviderSupportsCurrency("PAYIN", currency);
+    } catch {
       return NextResponse.json(
         { error: `PayIn is enabled for USD only. Booking currency is "${booking.currency}".` },
         { status: 400 }

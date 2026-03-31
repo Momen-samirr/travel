@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { passengerSchema, contactInformationSchema } from "./passenger";
+import { SUPPORTED_CURRENCIES } from "@/lib/currency";
 
 // Legacy guest details schema for backward compatibility
 const legacyGuestDetailsSchema = z.object({
@@ -44,6 +45,7 @@ export const bookingSchema = z.object({
     .toUpperCase()
     .regex(/^[A-Z]{3}$/, "Currency must be a valid 3-letter code")
     .optional(), // Currency (for flight bookings)
+  preferredCurrency: z.enum(SUPPORTED_CURRENCIES).optional(),
   // Charter Package specific fields
   charterHotelOptionId: z.string().optional().nullable(),
   charterDepartureOptionId: z.string().optional().nullable(),

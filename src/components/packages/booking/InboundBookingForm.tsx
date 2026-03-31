@@ -15,7 +15,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
-import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
+import {
+  CURRENCY_COOKIE_KEY,
+  DEFAULT_CURRENCY,
+  normalizeCurrency,
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 interface InboundBookingFormProps {
   packageData: any;
@@ -32,6 +38,8 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
   const [pickupLocation, setPickupLocation] = useState<string>("");
   const [transferOptions, setTransferOptions] = useState<string[]>([]);
+  const [preferredCurrency, setPreferredCurrency] =
+    useState<SupportedCurrency>(DEFAULT_CURRENCY);
   const [submitting, setSubmitting] = useState(false);
   const packageCurrency = normalizeCurrency(packageData.currency || DEFAULT_CURRENCY);
 
@@ -74,6 +82,18 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
     });
   }, [packageData.addons]);
 
+  useEffect(() => {
+    const storedCurrency =
+      typeof window !== "undefined"
+        ? (window.localStorage.getItem(CURRENCY_COOKIE_KEY) as SupportedCurrency | null)
+        : null;
+    if (storedCurrency && SUPPORTED_CURRENCIES.includes(storedCurrency)) {
+      setPreferredCurrency(storedCurrency);
+    } else {
+      setPreferredCurrency(packageCurrency);
+    }
+  }, [packageCurrency]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -102,6 +122,7 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
           selectedAddonIds,
           pickupLocation: pickupLocation || undefined,
           transferOptions: transferOptions.length > 0 ? transferOptions : undefined,
+          preferredCurrency,
         }),
       });
 
@@ -175,6 +196,35 @@ export function InboundBookingForm({ packageData }: InboundBookingFormProps) {
             <p className="text-sm text-muted-foreground">Offer starts from</p>
             <p className="text-xl font-semibold">
               {formatCurrency(offerPrice, packageCurrency)}
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Preferred Currency</Label>
+            <Select
+              value={preferredCurrency}
+              onValueChange={(value) => {
+                const selected = value as SupportedCurrency;
+                setPreferredCurrency(selected);
+                if (typeof window !== "undefined") {
+                  window.localStorage.setItem(CURRENCY_COOKIE_KEY, selected);
+                  document.cookie = `${CURRENCY_COOKIE_KEY}=${selected}; path=/; max-age=31536000; samesite=lax`;
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select preferred currency" />
+              </SelectTrigger>
+              <SelectContent>
+                {SUPPORTED_CURRENCIES.map((currency) => (
+                  <SelectItem key={currency} value={currency}>
+                    {currency}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Final amount is settled in the selected currency during booking.
             </p>
           </div>
 

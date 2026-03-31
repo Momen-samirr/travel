@@ -18,9 +18,22 @@ import { useCharterPackagePricing } from "@/hooks/use-charter-package-pricing";
 import { useDepartureHotels } from "@/hooks/use-departure-hotels";
 import { PriceBreakdown } from "./price-breakdown";
 import { Decimal } from "@prisma/client/runtime/library";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
-import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  CURRENCY_COOKIE_KEY,
+  DEFAULT_CURRENCY,
+  normalizeCurrency,
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 interface PackageData {
   id: string;
@@ -66,6 +79,12 @@ interface PackageData {
     currency: string;
     isRequired: boolean;
   }>;
+  priceOverrides?: Array<{
+    currency: string;
+    basePrice: number | null;
+    priceRangeMin: number | null;
+    priceRangeMax: number | null;
+  }>;
 }
 
 interface DynamicBookingFormProps {
@@ -87,6 +106,8 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   const [numberOfChildren2to6, setNumberOfChildren2to6] = useState(0);
   const [numberOfInfants, setNumberOfInfants] = useState(0);
   const [selectedAddonIds, setSelectedAddonIds] = useState<string[]>([]);
+  const [preferredCurrency, setPreferredCurrency] =
+    useState<SupportedCurrency>(DEFAULT_CURRENCY);
   const [submitting, setSubmitting] = useState(false);
   const packageCurrency = normalizeCurrency(packageData.currency || DEFAULT_CURRENCY);
 
@@ -107,6 +128,18 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
       return combined;
     });
   }, [packageData.addons]);
+
+  useEffect(() => {
+    const storedCurrency =
+      typeof window !== "undefined"
+        ? (window.localStorage.getItem(CURRENCY_COOKIE_KEY) as SupportedCurrency | null)
+        : null;
+    if (storedCurrency && SUPPORTED_CURRENCIES.includes(storedCurrency)) {
+      setPreferredCurrency(storedCurrency);
+    } else {
+      setPreferredCurrency(packageCurrency);
+    }
+  }, [packageCurrency]);
 
   // Reset hotel and room type when departure changes
   useEffect(() => {
@@ -226,6 +259,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
           numberOfInfants,
           selectedAddonIds,
           numberOfGuests: numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants,
+          preferredCurrency,
           guestDetails: {
             firstName: user.firstName || "",
             lastName: user.lastName || "",
@@ -304,7 +338,41 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
       )}
 
       {packageData.departureOptions.length > 0 && (
+        <>
         <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Preferred Currency</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Select
+            value={preferredCurrency}
+            onValueChange={(value) => {
+              const selected = value as SupportedCurrency;
+              setPreferredCurrency(selected);
+              if (typeof window !== "undefined") {
+                window.localStorage.setItem(CURRENCY_COOKIE_KEY, selected);
+                document.cookie = `${CURRENCY_COOKIE_KEY}=${selected}; path=/; max-age=31536000; samesite=lax`;
+              }
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select preferred currency" />
+            </SelectTrigger>
+            <SelectContent>
+              {SUPPORTED_CURRENCIES.map((currency) => (
+                <SelectItem key={currency} value={currency}>
+                  {currency}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="mt-2 text-xs text-muted-foreground">
+            Final amount is settled in the selected currency during booking.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
               <Plane className="h-5 w-5" />
@@ -350,6 +418,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
             </RadioGroup>
           </CardContent>
         </Card>
+        </>
       )}
 
       {departureOptionId && (

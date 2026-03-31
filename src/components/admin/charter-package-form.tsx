@@ -54,6 +54,12 @@ interface CharterPackageFormProps {
     departureOptions?: any[];
     hotelOptions?: any[];
     addons?: any[];
+    priceOverrides?: Array<{
+      currency: string;
+      basePrice?: number | null;
+      priceRangeMin?: number | null;
+      priceRangeMax?: number | null;
+    }>;
     typeConfig?: unknown;
   };
 }
@@ -134,6 +140,21 @@ export function CharterPackageForm({
   const [addons, setAddons] = useState<
     (CharterPackageAddonInput & { id?: string })[]
   >(initialData?.addons || []);
+  const [priceOverrides, setPriceOverrides] = useState<
+    Array<{
+      currency: string;
+      basePrice: number | null;
+      priceRangeMin: number | null;
+      priceRangeMax: number | null;
+    }>
+  >(
+    initialData?.priceOverrides?.map((override) => ({
+      currency: override.currency,
+      basePrice: override.basePrice ?? null,
+      priceRangeMin: override.priceRangeMin ?? null,
+      priceRangeMax: override.priceRangeMax ?? null,
+    })) || []
+  );
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -179,6 +200,13 @@ export function CharterPackageForm({
       excursionProgram: initialData?.excursionProgram || [],
       requiredDocuments: initialData?.requiredDocuments || [],
       typeConfig: initialData?.typeConfig ?? null,
+      priceOverrides:
+        initialData?.priceOverrides?.map((override) => ({
+          currency: override.currency as "EGP" | "USD",
+          basePrice: override.basePrice ?? null,
+          priceRangeMin: override.priceRangeMin ?? null,
+          priceRangeMax: override.priceRangeMax ?? null,
+        })) || [],
     },
   });
   const selectedPackageType = form.watch("type");
@@ -482,6 +510,7 @@ export function CharterPackageForm({
         excursionProgram,
         requiredDocuments,
         typeConfig: isInbound ? inboundTypeConfig : null,
+        priceOverrides,
       };
 
       const response = await fetch(url, {
@@ -1096,6 +1125,138 @@ export function CharterPackageForm({
                 )}
               />
             </div>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Per-Currency Price Overrides</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() =>
+                      setPriceOverrides((prev) => [
+                        ...prev,
+                        {
+                          currency: DEFAULT_CURRENCY,
+                          basePrice: null,
+                          priceRangeMin: null,
+                          priceRangeMax: null,
+                        },
+                      ])
+                    }
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Override
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {priceOverrides.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No overrides configured. Base package currency values will be used with FX fallback.
+                  </p>
+                ) : null}
+                {priceOverrides.map((override, index) => (
+                  <div key={`${override.currency}-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border p-4 md:grid-cols-5">
+                    <div>
+                      <label className="text-sm font-medium">Currency</label>
+                      <Select
+                        value={override.currency}
+                        onValueChange={(value) =>
+                          setPriceOverrides((prev) =>
+                            prev.map((item, i) => (i === index ? { ...item, currency: value } : item))
+                          )
+                        }
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SUPPORTED_CURRENCIES.map((currency) => (
+                            <SelectItem key={currency} value={currency}>
+                              {currency}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Base Price</label>
+                      <Input
+                        className="mt-1"
+                        type="number"
+                        step="0.01"
+                        value={override.basePrice ?? ""}
+                        onChange={(e) =>
+                          setPriceOverrides((prev) =>
+                            prev.map((item, i) =>
+                              i === index
+                                ? {
+                                    ...item,
+                                    basePrice: e.target.value ? Number(e.target.value) : null,
+                                  }
+                                : item
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Range Min</label>
+                      <Input
+                        className="mt-1"
+                        type="number"
+                        step="0.01"
+                        value={override.priceRangeMin ?? ""}
+                        onChange={(e) =>
+                          setPriceOverrides((prev) =>
+                            prev.map((item, i) =>
+                              i === index
+                                ? {
+                                    ...item,
+                                    priceRangeMin: e.target.value ? Number(e.target.value) : null,
+                                  }
+                                : item
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Range Max</label>
+                      <Input
+                        className="mt-1"
+                        type="number"
+                        step="0.01"
+                        value={override.priceRangeMax ?? ""}
+                        onChange={(e) =>
+                          setPriceOverrides((prev) =>
+                            prev.map((item, i) =>
+                              i === index
+                                ? {
+                                    ...item,
+                                    priceRangeMax: e.target.value ? Number(e.target.value) : null,
+                                  }
+                                : item
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() =>
+                          setPriceOverrides((prev) => prev.filter((_, i) => i !== index))
+                        }
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {isInbound && (

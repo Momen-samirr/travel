@@ -19,6 +19,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser } from "@clerk/nextjs";
 import { useToast } from "@/hooks/use-toast";
+import { CURRENCY_COOKIE_KEY, DEFAULT_CURRENCY } from "@/lib/currency";
 
 interface BookingFormProps {
   tourId?: string;
@@ -91,7 +92,13 @@ export function BookingForm({
       const response = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          preferredCurrency:
+            (typeof window !== "undefined" &&
+              window.localStorage.getItem(CURRENCY_COOKIE_KEY)) ||
+            DEFAULT_CURRENCY,
+        }),
       });
 
       if (!response.ok) {

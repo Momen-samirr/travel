@@ -89,6 +89,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, message: "Already processed" });
     }
 
+    if ((booking.currency || "").toUpperCase() !== "USD") {
+      await logActivity({
+        action: "WEBHOOK_ERROR",
+        entityType: "Webhook",
+        entityId: booking.id,
+        details: {
+          source: "PAYIN",
+          error: "Currency mismatch for PayIn webhook",
+          invoiceId,
+          bookingCurrency: booking.currency,
+          expectedCurrency: "USD",
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return NextResponse.json({ success: false, error: "Currency mismatch" }, { status: 200 });
+    }
+
     const isPaid = payload.success === true && payload.invoice_status === "PAID";
 
     if (isPaid) {

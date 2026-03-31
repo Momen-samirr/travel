@@ -4,6 +4,7 @@ import { bookingSchema, type BookingInput } from "@/lib/validations/booking";
 import { inboundTypeConfigSchema } from "@/lib/validations/charter-package";
 import { getCurrentUser } from "@/lib/clerk";
 import { DEFAULT_CURRENCY, normalizeCurrency } from "@/lib/currency";
+import { getSettlementQuote } from "@/lib/pricing-quote";
 
 export async function GET(request: NextRequest) {
   try {
@@ -78,9 +79,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = bookingSchema.parse(body);
 
-    // Calculate total amount based on booking type
-    let totalAmount = 0;
-    let currency = DEFAULT_CURRENCY;
+    // Calculate source amount in product-native currency first, then settle
+    // to preferred currency using override/fx policy.
+    let sourceAmount = 0;
+    let sourceCurrency = DEFAULT_CURRENCY;
+    let quoteSubtotalAmount: number | null = null;
+    let quoteAddonsAmount = 0;
+    let quoteDiscountAmount = 0;
 
     if (data.bookingType === "TOUR" && data.tourId) {
       const tour = await prisma.tour.findUnique({
@@ -92,8 +97,9 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         );
       }
-      totalAmount = Number(tour.discountPrice || tour.price) * (data.numberOfGuests || 1);
-      currency = normalizeCurrency(tour.currency || DEFAULT_CURRENCY);
+      sourceAmount = Number(tour.discountPrice || tour.price) * (data.numberOfGuests || 1);
+      sourceCurrency = normalizeCurrency(tour.currency || DEFAULT_CURRENCY);
+      quoteSubtotalAmount = sourceAmount;
     } else if (data.bookingType === "FLIGHT") {
       // For flight bookings, we use Amadeus offers (not stored in DB)
       // Price should come from confirmed flight offer or be provided
@@ -101,8 +107,9 @@ export async function POST(request: NextRequest) {
       
       if (bookingData.totalAmount && bookingData.totalAmount > 0) {
         // Use provided totalAmount (from frontend after price confirmation)
-        totalAmount = bookingData.totalAmount;
-        currency = normalizeCurrency(bookingData.currency || DEFAULT_CURRENCY);
+        sourceAmount = bookingData.totalAmount;
+        sourceCurrency = normalizeCurrency(bookingData.currency || DEFAULT_CURRENCY);
+        quoteSubtotalAmount = sourceAmount;
       } else if (data.flightOfferData) {
         // Fallback: Extract price from flight offer data
         // Structure can be: { outbound: {...}, return: {...} } or direct offer
@@ -116,8 +123,9 @@ export async function POST(request: NextRequest) {
         const pricePerPerson = outboundPrice + returnPrice;
         
         if (pricePerPerson > 0) {
-          totalAmount = pricePerPerson * (data.numberOfGuests || 1);
-          currency = normalizeCurrency(outbound?.price?.currency || DEFAULT_CURRENCY);
+          sourceAmount = pricePerPerson * (data.numberOfGuests || 1);
+          sourceCurrency = normalizeCurrency(outbound?.price?.currency || DEFAULT_CURRENCY);
+          quoteSubtotalAmount = sourceAmount;
         } else {
           return NextResponse.json(
             { error: "Flight price could not be determined. Please try again." },
@@ -141,8 +149,9 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        totalAmount = Number(flight.price) * (data.numberOfGuests || 1);
-        currency = normalizeCurrency(flight.currency || DEFAULT_CURRENCY);
+        sourceAmount = Number(flight.price) * (data.numberOfGuests || 1);
+        sourceCurrency = normalizeCurrency(flight.currency || DEFAULT_CURRENCY);
+        quoteSubtotalAmount = sourceAmount;
       } else {
         return NextResponse.json(
           { error: "Flight offer data or flight ID is required for flight bookings" },
@@ -176,8 +185,9 @@ export async function POST(request: NextRequest) {
           { status: 404 }
         );
       }
-      totalAmount = Number(visa.price) * (data.numberOfGuests || 1);
-      currency = normalizeCurrency(visa.currency || DEFAULT_CURRENCY);
+      sourceAmount = Number(visa.price) * (data.numberOfGuests || 1);
+      sourceCurrency = normalizeCurrency(visa.currency || DEFAULT_CURRENCY);
+      quoteSubtotalAmount = sourceAmount;
     } else if (data.bookingType === "CHARTER_PACKAGE" && data.charterPackageId) {
       const pkg = await prisma.charterTravelPackage.findUnique({
         where: { id: data.charterPackageId },
@@ -249,12 +259,14 @@ export async function POST(request: NextRequest) {
           }, 0);
         }
 
-        totalAmount = currentPrice * totalTravelers + selectedTransferCost + addonsCost;
-        currency = normalizeCurrency(
+        sourceAmount = currentPrice * totalTravelers + selectedTransferCost + addonsCost;
+        sourceCurrency = normalizeCurrency(
           parsedTypeConfig.success
             ? parsedTypeConfig.data.offer.currency
             : pkg.currency || DEFAULT_CURRENCY
         );
+        quoteSubtotalAmount = sourceAmount;
+        quoteAddonsAmount = addonsCost;
       } else {
         // Validate required fields for charter package booking
         if (!data.charterHotelOptionId || !data.charterDepartureOptionId || !data.roomType) {
@@ -315,22 +327,6 @@ export async function POST(request: NextRequest) {
               { status: 400 }
             );
           }
-        }
-
-        // Calculate base price (optional, used as fallback only)
-        let basePrice = 0;
-        if (pkg.basePrice) {
-          basePrice = Number(pkg.basePrice);
-        } else if (pkg.priceRangeMin && pkg.priceRangeMax) {
-          basePrice =
-            (Number(pkg.priceRangeMin) + Number(pkg.priceRangeMax)) / 2;
-        }
-        // Note: basePrice can be 0 if not configured - we'll use room type pricing instead
-
-        // Calculate departure modifier
-        let departureModifier = 0;
-        if (departureOption.priceModifier) {
-          departureModifier = Number(departureOption.priceModifier);
         }
 
         // Calculate costs from RoomTypePricing (per-person pricing)
@@ -442,10 +438,22 @@ export async function POST(request: NextRequest) {
           discount = (subtotal * Number(pkg.discount)) / 100;
         }
 
-        totalAmount = subtotal - discount;
-        currency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
+        sourceAmount = subtotal - discount;
+        sourceCurrency = normalizeCurrency(pkg.currency || DEFAULT_CURRENCY);
+        quoteSubtotalAmount = subtotal;
+        quoteAddonsAmount = addonsCost;
+        quoteDiscountAmount = discount;
       }
     }
+
+    const preferredCurrency = normalizeCurrency(data.preferredCurrency || sourceCurrency);
+    const settlementQuote = await getSettlementQuote({
+      sourceAmount,
+      sourceCurrency,
+      preferredCurrency,
+      charterPackageId: data.charterPackageId || null,
+      tourId: data.tourId || null,
+    });
 
     const normalizedAdults = data.numberOfAdults || data.numberOfGuests || 1;
     const normalizedChildren6to12 =
@@ -480,8 +488,16 @@ export async function POST(request: NextRequest) {
         numberOfInfants: normalizedInfants || null,
         selectedAddonIds: data.selectedAddonIds ? (data.selectedAddonIds as any) : null,
         travelDate: data.travelDate,
-        totalAmount,
-        currency,
+        totalAmount: settlementQuote.settledAmount,
+        currency: settlementQuote.settledCurrency,
+        quoteSourceAmount: settlementQuote.sourceAmount,
+        quoteSourceCurrency: settlementQuote.sourceCurrency,
+        quotePreferredCurrency: settlementQuote.settledCurrency,
+        quoteFxRate: settlementQuote.fxRate,
+        quotePriceSource: settlementQuote.priceSource,
+        quoteSubtotalAmount,
+        quoteAddonsAmount,
+        quoteDiscountAmount,
         guestDetails: (data.guestDetails || fallbackGuestDetails) as any,
         flightOfferData: data.flightOfferData || null,
         status: "PENDING",
