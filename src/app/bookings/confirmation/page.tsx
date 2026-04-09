@@ -7,11 +7,12 @@ import Link from "next/link";
 export default async function PayinConfirmationPage({
   searchParams,
 }: {
-  searchParams: { invoice_id?: string; status?: string };
+  searchParams: { invoice_id?: string; invoice_status?: string };
 }) {
   const invoiceId = searchParams.invoice_id;
-  const status = searchParams.status;
+  const status = searchParams.invoice_status;
 
+  // ❌ Missing invoice_id
   if (!invoiceId) {
     return (
       <div className="container mx-auto px-4 py-12">
@@ -24,6 +25,7 @@ export default async function PayinConfirmationPage({
     );
   }
 
+  // ✅ Find booking using invoice_id
   const booking = await prisma.booking.findFirst({
     where: {
       paymentTransactionId: invoiceId,
@@ -42,8 +44,8 @@ export default async function PayinConfirmationPage({
     );
   }
 
-  // Optional: redirect to real booking confirmation page
- if (["paid", "completed"].includes(status?.toLowerCase() || "")) {
+  // ✅ Correct status handling
+  if (["paid", "success"].includes(status?.toLowerCase() || "")) {
     redirect(`/bookings/${booking.id}/confirmation`);
   }
 
