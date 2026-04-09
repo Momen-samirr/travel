@@ -31,7 +31,7 @@ export function Footer() {
             </Link>
             <p className="text-sm text-muted-foreground mb-6 max-w-md">
               Your trusted partner for amazing travel experiences. Discover the
-              world with us and create memories that last a lifetime.
+              world with us and create memories that last a lifetime..
             </p>
             <div className="flex gap-4">
               <a
