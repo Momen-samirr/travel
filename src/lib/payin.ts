@@ -132,6 +132,8 @@ export async function createPayinCheckout(
   form.append("last_name", lastName);
   form.append("email", email);
   form.append("order_title", orderTitle);
+  form.append("merchant_reference_id", orderTitle); // ✅ ADD THIS
+
   form.append("order_amount", orderAmount.toFixed(2));
   form.append("address", address);
   form.append("city", city);
@@ -161,7 +163,8 @@ export async function createPayinCheckout(
   }
 
   const checkoutUrl = payload.data?.checkout_url || "";
-  const invoiceId = payload.data?.invoice_id?.toString() || "";
+const invoiceId = String(payload.data?.invoice_id ?? "").trim();
+console.log("💳 PAYIN raw invoice_id:", payload.data?.invoice_id);
   if (!checkoutUrl || !invoiceId) {
     throw new Error("PayIn init response is missing checkout_url or invoice_id");
   }

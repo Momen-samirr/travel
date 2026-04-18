@@ -44,32 +44,36 @@ export async function POST(request: NextRequest) {
     const email = (guestDetails.email as string) || user.email || "";
     const phoneNumber = (guestDetails.phone as string) || user.phone || "";
 
-    if (provider === "PAYIN") {
-      ensureProviderSupportsCurrency("PAYIN", currency);
-      const { checkoutUrl, invoiceId } = await createPayinCheckout({
-        orderTitle: `Booking ${booking.id}`,
-        orderAmount: amount,
-        currency,
-        customer: {
-          firstName,
-          lastName,
-          email,
-          address: (guestDetails.address as string) || "",
-          city: (guestDetails.city as string) || "",
-          country: (guestDetails.country as string) || "",
-        },
-      });
+  if (provider === "PAYIN") {
+  ensureProviderSupportsCurrency("PAYIN", currency);
 
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: {
-          paymentTransactionId: invoiceId,
-          paymentMethod: "PAYIN",
-        },
-      });
+  const { checkoutUrl, invoiceId } = await createPayinCheckout({
+    orderTitle: `Booking ${booking.id}`,
+    orderAmount: amount,
+    currency,
+    customer: {
+      firstName,
+      lastName,
+      email,
+      address: (guestDetails.address as string) || "",
+      city: (guestDetails.city as string) || "",
+      country: (guestDetails.country as string) || "",
+    },
+  });
 
-      return NextResponse.json({ paymentUrl: checkoutUrl, provider: "PAYIN" });
-    }
+  const savedInvoiceId = String(invoiceId).trim();
+  console.log("💳 PAYIN invoiceId from init:", savedInvoiceId);
+
+  await prisma.booking.update({
+    where: { id: booking.id },
+    data: {
+      paymentTransactionId: savedInvoiceId,
+      paymentMethod: "PAYIN",
+    },
+  });
+
+  return NextResponse.json({ paymentUrl: checkoutUrl, provider: "PAYIN" });
+}
 
     ensureProviderSupportsCurrency("PAYMOB", currency);
     const amountCents = Math.round(amount * 100);

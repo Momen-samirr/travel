@@ -9,7 +9,8 @@ export default async function PayinConfirmationPage({
 }: {
   searchParams: { invoice_id?: string; invoice_status?: string };
 }) {
-  const invoiceId = searchParams.invoice_id;
+  const invoiceId = String(searchParams.invoice_id ?? "").trim();
+  console.log("🔍 invoiceId from URL:", invoiceId);
 
   // ❌ Missing invoice_id
   if (!invoiceId) {
@@ -30,6 +31,8 @@ export default async function PayinConfirmationPage({
       paymentTransactionId: invoiceId,
     },
   });
+
+  console.log("🔍 booking from DB:", booking);
 
   if (!booking) {
     return (
