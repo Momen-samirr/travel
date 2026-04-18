@@ -182,12 +182,7 @@ export interface PayinWebhookPayload {
 }
 
 function buildWebhookSignatureString(payload: Omit<PayinWebhookPayload, "signature">): string {
-  return [
-    String(payload.success),
-    String(payload.invoice_id),
-    String(payload.invoice_status),
-    payload.message || "",
-  ].join("");
+  return `${payload.invoice_id}${payload.invoice_status}${payload.message || ""}`;
 }
 
 export function verifyPayinWebhook(payload: PayinWebhookPayload): boolean {
