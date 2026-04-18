@@ -5,18 +5,22 @@ import { prisma } from "@/lib/prisma";
 const PAYIN_HASH_TOKEN = process.env.PAYIN_HASH_TOKEN!;
 
 function verifySignature(payload: any, receivedSignature: string) {
-  const data = [
-    payload.invoice_id,
-    payload.invoice_status,
-    payload.message || "",
-  ];
+  const baseString = `${payload.invoice_id}${payload.invoice_status}${payload.message || ""}`;
 
-  const generated = crypto
+  const expectedHex = crypto
     .createHmac("sha256", PAYIN_HASH_TOKEN)
-.update(`${payload.invoice_id}${payload.invoice_status}${payload.message || ""}`)
+    .update(baseString)
+    .digest("hex");
+
+  const expectedBase64 = crypto
+    .createHmac("sha256", PAYIN_HASH_TOKEN)
+    .update(baseString)
     .digest("base64");
 
-  return generated === receivedSignature;
+  return (
+    receivedSignature === expectedHex ||
+    receivedSignature === expectedBase64
+  );
 }
 
 export async function POST(req: NextRequest) {

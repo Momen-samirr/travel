@@ -47,10 +47,23 @@ export default async function PayinConfirmationPage({
   }
 
   // ✅ Correct status handling
-  if (booking.paymentStatus === "PAID") {
-    redirect(`/bookings/${booking.id}/confirmation`);
+  const isSuccess =
+    searchParams.invoice_status?.toUpperCase() === "PAID" ||
+    searchParams.success === "1";
+
+  if (isSuccess && booking.paymentStatus !== "PAID") {
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: "PAID",
+        status: "CONFIRMED",
+      },
+    });
   }
 
+  if (isSuccess) {
+    redirect(`/bookings/${booking.id}/confirmation`);
+  }
   return (
     <div className="container mx-auto px-4 py-12">
       <div className="max-w-2xl mx-auto space-y-6">

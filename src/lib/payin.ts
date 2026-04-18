@@ -27,6 +27,7 @@ export interface CreatePayinCheckoutParams {
   orderTitle: string;
   orderAmount: number;
   currency: string;
+    redirectUrl: string; // ✅ ADD THIS
   customer: PayinCustomer;
 }
 
@@ -92,8 +93,12 @@ function buildInitSignature(values: {
 }
 
 export async function createPayinCheckout(
+
   params: CreatePayinCheckoutParams
+  
 ): Promise<PayinCheckoutResult> {
+      const redirectUrl = params.redirectUrl;
+
   requirePayinConfig();
 
   const currency = normalizeUsdCurrency(params.currency);
@@ -139,6 +144,8 @@ export async function createPayinCheckout(
   form.append("city", city);
   form.append("country", country);
   form.append("currency", currency);
+  form.append("redirect_url", redirectUrl); // ✅ ADD THIS
+
   form.append("signature", signature);
 
   const response = await fetch(`${PAYIN_BASE_URL}/api/integration/init`, {

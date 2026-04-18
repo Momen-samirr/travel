@@ -46,21 +46,22 @@ export async function POST(request: NextRequest) {
 
   if (provider === "PAYIN") {
   ensureProviderSupportsCurrency("PAYIN", currency);
+const redirectUrl = `https://www.tishourytours.com/bookings/${booking.id}/confirmation`;
 
-  const { checkoutUrl, invoiceId } = await createPayinCheckout({
-    orderTitle: `Booking ${booking.id}`,
-    orderAmount: amount,
-    currency,
-    customer: {
-      firstName,
-      lastName,
-      email,
-      address: (guestDetails.address as string) || "",
-      city: (guestDetails.city as string) || "",
-      country: (guestDetails.country as string) || "",
-    },
-  });
-
+const { checkoutUrl, invoiceId } = await createPayinCheckout({
+  orderTitle: `Booking ${booking.id}`,
+  orderAmount: amount,
+  currency,
+  redirectUrl, // ✅ THIS IS THE IMPORTANT PART
+  customer: {
+    firstName,
+    lastName,
+    email,
+    address: (guestDetails.address as string) || "",
+    city: (guestDetails.city as string) || "",
+    country: (guestDetails.country as string) || "",
+  },
+});
   const savedInvoiceId = String(invoiceId).trim();
   console.log("💳 PAYIN invoiceId from init:", savedInvoiceId);
 
