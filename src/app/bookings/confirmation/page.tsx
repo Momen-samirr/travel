@@ -30,17 +30,6 @@ export default async function PayinConfirmationPage({
       paymentTransactionId: invoiceId,
     },
   });
-  const invoiceId = searchParams.invoice_id;
-
-  console.log("🔍 invoiceId from URL:", invoiceId); // 👈 HERE
-
-  const booking = await prisma.booking.findFirst({
-    where: {
-      paymentTransactionId: invoiceId,
-    },
-  });
-
-  console.log("🔍 booking from DB:", booking); // 👈 AND HERE
 
   if (!booking) {
     return (
