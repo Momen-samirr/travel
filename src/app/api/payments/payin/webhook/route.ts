@@ -5,12 +5,16 @@ import { prisma } from "@/lib/prisma";
 const PAYIN_HASH_TOKEN = process.env.PAYIN_HASH_TOKEN!;
 
 function verifySignature(payload: any, receivedSignature: string) {
-  const data = `${payload.invoice_id}${payload.invoice_status}${payload.message || ""}`;
+  const data = [
+    payload.invoice_id,
+    payload.invoice_status,
+    payload.message || "",
+  ];
 
   const generated = crypto
     .createHmac("sha256", PAYIN_HASH_TOKEN)
-    .update(data)
-    .digest("hex");
+.update(`${payload.invoice_id}${payload.invoice_status}${payload.message || ""}`)
+    .digest("base64");
 
   return generated === receivedSignature;
 }
@@ -21,21 +25,31 @@ export async function POST(req: NextRequest) {
 
     console.log("🔔 PayIn Webhook:", body);
 
-    const { invoice_id, invoice_status, signature } = body;
+    const {
+      invoice_id,
+      invoice_status,
+      signature,
+    } = body;
 
     if (!invoice_id || !invoice_status || !signature) {
-      return NextResponse.json({ success: true });
+      return NextResponse.json(
+        { error: "Invalid webhook payload" },
+        { status: 400 }
+      );
     }
 
+    // ✅ Verify signature
     const isValid = verifySignature(body, signature);
 
     if (!isValid) {
       console.error("❌ Invalid PayIn signature");
-      return NextResponse.json({ success: true });
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 403 }
+      );
     }
 
-    const status = invoice_status?.toUpperCase();
-
+    // ✅ Find booking
     const booking = await prisma.booking.findFirst({
       where: {
         paymentTransactionId: String(invoice_id),
@@ -43,12 +57,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!booking) {
-      console.error("❌ Booking not found:", invoice_id);
-      return NextResponse.json({ success: true });
+     console.error("❌ Booking not found for invoice:", invoice_id);
+return NextResponse.json({ success: true });
     }
 
-    if (status === "PAID") {
-      await prisma.booking.update({
+    // ✅ Handle payment status
+const isSuccess =
+  body.success === 1 ||
+  body.success === "1" ||
+  invoice_status?.toUpperCase() === "PAID";
+
+if (isSuccess) {
+        await prisma.booking.update({
         where: { id: booking.id },
         data: {
           paymentStatus: "PAID",
@@ -59,7 +79,7 @@ export async function POST(req: NextRequest) {
       console.log("✅ Booking marked as PAID:", booking.id);
     }
 
-    if (status === "FAILED") {
+    if (invoice_status === "FAILED") {
       await prisma.booking.update({
         where: { id: booking.id },
         data: {
@@ -70,7 +90,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Webhook error:", error);
-    return NextResponse.json({ success: true });
+    console.error("❌ PayIn webhook error:", error);
+    return NextResponse.json(
+      { error: "Webhook processing failed" },
+      { status: 500 }
+    );
   }
 }

@@ -31,8 +31,9 @@ export default async function BookingConfirmationPage({
     redirect(`/bookings/${id}`);
   }
 
-  const isFlightBooking = booking.bookingType === "FLIGHT" && booking.flightOfferData;
-  
+  const isFlightBooking =
+    booking.bookingType === "FLIGHT" && booking.flightOfferData;
+
   if (!isFlightBooking) {
     // For non-flight bookings, show simple confirmation
     return (
@@ -40,9 +41,12 @@ export default async function BookingConfirmationPage({
         <div className="max-w-2xl mx-auto space-y-6">
           <Card className="border-green-200 bg-green-50">
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold text-green-800">Booking Confirmed!</h2>
+              <h2 className="text-2xl font-bold text-green-800">
+                Booking Confirmed!
+              </h2>
               <p className="text-green-700 mt-2">
-                Your booking has been confirmed. A confirmation email has been sent.
+                Your booking has been confirmed. A confirmation email has been
+                sent.
               </p>
             </CardContent>
           </Card>
@@ -99,4 +103,3 @@ export default async function BookingConfirmationPage({
     </div>
   );
 }
-

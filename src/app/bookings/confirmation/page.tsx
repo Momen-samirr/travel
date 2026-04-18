@@ -10,7 +10,6 @@ export default async function PayinConfirmationPage({
   searchParams: { invoice_id?: string; invoice_status?: string };
 }) {
   const invoiceId = searchParams.invoice_id;
-  const status = searchParams.invoice_status;
 
   // ❌ Missing invoice_id
   if (!invoiceId) {
@@ -45,7 +44,7 @@ export default async function PayinConfirmationPage({
   }
 
   // ✅ Correct status handling
-  if (["paid", "success"].includes(status?.toLowerCase() || "")) {
+  if (booking.paymentStatus === "PAID") {
     redirect(`/bookings/${booking.id}/confirmation`);
   }
 
