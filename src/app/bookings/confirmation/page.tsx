@@ -1,29 +1,21 @@
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
+"use client";
 
-import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
-import { headers } from "next/headers";
+import { useEffect, useState } from "react";
 
-export default async function Page() {
-  let debug: any = {};
+export default function Page() {
+  const [data, setData] = useState<any>({
+    loading: true,
+  });
 
-  try {
-    // 🔥 FORCE READ FULL URL FROM HEADERS
-    const headersList = headers();
-    const fullUrl =
-      headersList.get("x-url") || headersList.get("referer") || "";
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
 
-    const parsedUrl = fullUrl ? new URL(fullUrl) : null;
+    const invoiceId = params.get("invoice_id") || "";
+    const status = (params.get("invoice_status") || "").toUpperCase();
+    const success = params.get("success") || "";
 
-    const invoiceId = parsedUrl?.searchParams.get("invoice_id") || "";
-    const status = (
-      parsedUrl?.searchParams.get("invoice_status") || ""
-    ).toUpperCase();
-    const success = parsedUrl?.searchParams.get("success") || "";
-
-    debug = {
-      fullUrl,
+    const debug = {
+      fullUrl: window.location.href,
       parsed: {
         invoiceId,
         status,
@@ -31,83 +23,53 @@ export default async function Page() {
       },
     };
 
-    // ❌ NO INVOICE ID
+    // ❌ No invoice_id
     if (!invoiceId) {
-      return (
-        <pre style={{ color: "red", fontSize: "18px" }}>
-          {JSON.stringify({ error: "NO_INVOICE_ID", debug }, null, 2)}
-        </pre>
-      );
-    }
-
-    // ✅ FIND BOOKING
-    const booking = await prisma.booking.findFirst({
-      where: {
-        paymentTransactionId: invoiceId,
-      },
-    });
-
-    debug.booking = booking;
-
-    if (!booking) {
-      return (
-        <pre style={{ color: "red", fontSize: "18px" }}>
-          {JSON.stringify({ error: "BOOKING_NOT_FOUND", debug }, null, 2)}
-        </pre>
-      );
-    }
-
-    // ✅ SUCCESS CHECK
-    const isSuccess = status === "PAID" || success === "1";
-
-    debug.isSuccess = isSuccess;
-
-    if (isSuccess) {
-      await prisma.booking.update({
-        where: { id: booking.id },
-        data: {
-          paymentStatus: "PAID",
-          status: "CONFIRMED",
-        },
+      setData({
+        error: "NO_INVOICE_ID",
+        debug,
       });
-
-      // 🔁 TEMP: show debug instead of redirect
-      return (
-        <pre style={{ color: "green", fontSize: "18px" }}>
-          {JSON.stringify(
-            {
-              success: true,
-              redirectTo: `/bookings/${booking.id}/confirmation`,
-              debug,
-            },
-            null,
-            2,
-          )}
-        </pre>
-      );
-
-      // 👉 AFTER CONFIRMING IT WORKS, UNCOMMENT:
-      // redirect(`/bookings/${booking.id}/confirmation`);
+      return;
     }
 
-    return (
-      <pre style={{ color: "red", fontSize: "18px" }}>
-        {JSON.stringify({ error: "PAYMENT_FAILED", debug }, null, 2)}
-      </pre>
-    );
-  } catch (err: any) {
-    return (
-      <pre style={{ color: "red", fontSize: "18px" }}>
-        {JSON.stringify(
-          {
-            error: "CRASH",
-            message: err?.message,
-            stack: err?.stack,
-          },
-          null,
-          2,
-        )}
-      </pre>
-    );
-  }
+    // ✅ Call backend to verify + update booking
+    fetch("/api/payments/payin/confirm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        invoiceId,
+        status,
+        success,
+      }),
+    })
+      .then(async (res) => {
+        const json = await res.json();
+
+        if (json.success && json.bookingId) {
+          // ✅ Redirect to final confirmation page
+          window.location.href = `/bookings/${json.bookingId}/confirmation`;
+        } else {
+          setData({
+            error: json.error || "UNKNOWN_ERROR",
+            debug,
+            response: json,
+          });
+        }
+      })
+      .catch((err) => {
+        setData({
+          error: "CLIENT_ERROR",
+          message: err.message,
+          debug,
+        });
+      });
+  }, []);
+
+  return (
+    <div style={{ padding: "20px" }}>
+      <pre style={{ fontSize: "16px" }}>{JSON.stringify(data, null, 2)}</pre>
+    </div>
+  );
 }
