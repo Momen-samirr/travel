@@ -45,10 +45,13 @@ export async function POST(request: NextRequest) {
     }
 
     const guestDetails = (booking.guestDetails || {}) as Record<string, unknown>;
+    const redirectUrl = `https://www.tishourytours.com/bookings/confirmation`;
     const { checkoutUrl, invoiceId } = await createPayinCheckout({
       orderTitle: `Booking ${booking.id}`,
       orderAmount: amount,
       currency,
+        redirectUrl, // ✅ ADD THIS
+
       customer: {
         firstName: (guestDetails.firstName as string) || user.name?.split(" ")[0] || "Guest",
         lastName: (guestDetails.lastName as string) || user.name?.split(" ").slice(1).join(" ") || "Customer",
