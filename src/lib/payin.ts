@@ -147,7 +147,15 @@ export async function createPayinCheckout(
   form.append("redirect_url", redirectUrl); // ✅ ADD THIS
 
   form.append("signature", signature);
-
+console.log("📤 PAYIN REQUEST:", {
+  url: `${PAYIN_BASE_URL}/api/integration/init`,
+  first_name: firstName,
+  last_name: lastName,
+  email,
+  order_title: orderTitle,
+  order_amount: orderAmount.toFixed(2),
+  currency,
+});
   const response = await fetch(`${PAYIN_BASE_URL}/api/integration/init`, {
     method: "POST",
     headers: {
@@ -157,6 +165,8 @@ export async function createPayinCheckout(
   });
 
   const rawText = await response.text();
+  console.log("📥 PAYIN RESPONSE STATUS:", response.status);
+console.log("📥 PAYIN RESPONSE RAW:", rawText);
   let payload: PayinInitResponse | null = null;
   try {
     payload = JSON.parse(rawText) as PayinInitResponse;
