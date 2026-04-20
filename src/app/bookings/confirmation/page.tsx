@@ -1,33 +1,29 @@
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 
-export default async function Page({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function Page() {
   let debug: any = {};
 
   try {
-    const invoiceIdRaw = searchParams?.invoice_id;
-    const invoiceId = Array.isArray(invoiceIdRaw)
-      ? invoiceIdRaw[0]
-      : invoiceIdRaw || "";
+    // 🔥 FORCE READ FULL URL FROM HEADERS
+    const headersList = headers();
+    const fullUrl =
+      headersList.get("x-url") || headersList.get("referer") || "";
 
-    const statusRaw = searchParams?.invoice_status;
-    const status = Array.isArray(statusRaw)
-      ? statusRaw[0]
-      : (statusRaw || "").toUpperCase();
+    const parsedUrl = fullUrl ? new URL(fullUrl) : null;
 
-    const successRaw = searchParams?.success;
-    const success = Array.isArray(successRaw)
-      ? successRaw[0]
-      : successRaw || "";
+    const invoiceId = parsedUrl?.searchParams.get("invoice_id") || "";
+    const status = (
+      parsedUrl?.searchParams.get("invoice_status") || ""
+    ).toUpperCase();
+    const success = parsedUrl?.searchParams.get("success") || "";
 
     debug = {
-      searchParams,
+      fullUrl,
       parsed: {
         invoiceId,
         status,
@@ -35,7 +31,7 @@ export default async function Page({
       },
     };
 
-    // ❌ no invoice id
+    // ❌ NO INVOICE ID
     if (!invoiceId) {
       return (
         <pre style={{ color: "red", fontSize: "18px" }}>
@@ -44,6 +40,7 @@ export default async function Page({
       );
     }
 
+    // ✅ FIND BOOKING
     const booking = await prisma.booking.findFirst({
       where: {
         paymentTransactionId: invoiceId,
@@ -60,6 +57,7 @@ export default async function Page({
       );
     }
 
+    // ✅ SUCCESS CHECK
     const isSuccess = status === "PAID" || success === "1";
 
     debug.isSuccess = isSuccess;
@@ -73,12 +71,13 @@ export default async function Page({
         },
       });
 
+      // 🔁 TEMP: show debug instead of redirect
       return (
         <pre style={{ color: "green", fontSize: "18px" }}>
           {JSON.stringify(
             {
               success: true,
-              redirectingTo: `/bookings/${booking.id}/confirmation`,
+              redirectTo: `/bookings/${booking.id}/confirmation`,
               debug,
             },
             null,
@@ -87,7 +86,7 @@ export default async function Page({
         </pre>
       );
 
-      // comment redirect temporarily
+      // 👉 AFTER CONFIRMING IT WORKS, UNCOMMENT:
       // redirect(`/bookings/${booking.id}/confirmation`);
     }
 
@@ -100,7 +99,11 @@ export default async function Page({
     return (
       <pre style={{ color: "red", fontSize: "18px" }}>
         {JSON.stringify(
-          { error: "CRASH", message: err?.message, stack: err?.stack },
+          {
+            error: "CRASH",
+            message: err?.message,
+            stack: err?.stack,
+          },
           null,
           2,
         )}
