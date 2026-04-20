@@ -10,14 +10,24 @@ export default async function PayinConfirmationPage({
     success?: string;
   };
 }) {
-  const invoiceId = String(searchParams.invoice_id || "").trim();
+  const invoiceId = String(searchParams.invoice_id ?? "").trim();
+  const status = String(searchParams.invoice_status ?? "").toUpperCase();
+  const success = String(searchParams.success ?? "");
 
-  console.log("🔍 searchParams:", searchParams);
-  console.log("🔍 invoiceId:", invoiceId);
+  console.log("🔥 CONFIRM PAGE HIT");
+  console.log("invoiceId:", invoiceId);
+  console.log("status:", status);
+  console.log("success:", success);
 
-  // ❌ Missing invoice_id
+  // ❌ No invoice_id at all → real error
   if (!invoiceId) {
-    return <div>Invalid payment response</div>;
+    return (
+      <div style={{ padding: 40 }}>
+        <h2 style={{ color: "red" }}>
+          Invalid payment response (no invoice_id)
+        </h2>
+      </div>
+    );
   }
 
   // ✅ Find booking
@@ -27,19 +37,21 @@ export default async function PayinConfirmationPage({
     },
   });
 
-  console.log("🔍 booking:", booking);
-
   if (!booking) {
-    return <div>Booking not found</div>;
+    return (
+      <div style={{ padding: 40 }}>
+        <h2 style={{ color: "red" }}>
+          Booking not found for invoice: {invoiceId}
+        </h2>
+      </div>
+    );
   }
 
-  // ✅ Check success
-  const isSuccess =
-    String(searchParams.invoice_status || "").toUpperCase() === "PAID" ||
-    searchParams.success === "1";
+  // ✅ SUCCESS CONDITION (THIS IS THE FIX)
+  const isSuccess = status === "PAID" || success === "1";
 
-  // ✅ Update booking if paid
   if (isSuccess) {
+    // update booking
     await prisma.booking.update({
       where: { id: booking.id },
       data: {
@@ -47,8 +59,19 @@ export default async function PayinConfirmationPage({
         status: "CONFIRMED",
       },
     });
+
+    // redirect to final page
+    redirect(`/bookings/${booking.id}/confirmation`);
   }
 
-  // ✅ Redirect to final confirmation page
-  redirect(`/bookings/${booking.id}/confirmation`);
+  // ❌ If NOT success
+  return (
+    <div style={{ padding: 40 }}>
+      <h2 style={{ color: "red" }}>Payment not successful</h2>
+
+      <p>invoice_id: {invoiceId}</p>
+      <p>status: {status}</p>
+      <p>success: {success}</p>
+    </div>
+  );
 }
