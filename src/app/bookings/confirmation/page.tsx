@@ -1,77 +1,108 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
-export default async function PayinConfirmationPage({
+export default async function Page({
   searchParams,
 }: {
-  searchParams: {
-    invoice_id?: string;
-    invoice_status?: string;
-    success?: string;
-  };
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const invoiceId = String(searchParams.invoice_id ?? "").trim();
-  const status = String(searchParams.invoice_status ?? "").toUpperCase();
-  const success = String(searchParams.success ?? "");
+  let debug: any = {};
 
-  console.log("🔥 CONFIRM PAGE HIT");
-  console.log("invoiceId:", invoiceId);
-  console.log("status:", status);
-  console.log("success:", success);
+  try {
+    const invoiceIdRaw = searchParams?.invoice_id;
+    const invoiceId = Array.isArray(invoiceIdRaw)
+      ? invoiceIdRaw[0]
+      : invoiceIdRaw || "";
 
-  // ❌ No invoice_id at all → real error
-  if (!invoiceId) {
-    return (
-      <div style={{ padding: 40 }}>
-        <h2 style={{ color: "red" }}>
-          Invalid payment response (no invoice_id)
-        </h2>
-      </div>
-    );
-  }
+    const statusRaw = searchParams?.invoice_status;
+    const status = Array.isArray(statusRaw)
+      ? statusRaw[0]
+      : (statusRaw || "").toUpperCase();
 
-  // ✅ Find booking
-  const booking = await prisma.booking.findFirst({
-    where: {
-      paymentTransactionId: invoiceId,
-    },
-  });
+    const successRaw = searchParams?.success;
+    const success = Array.isArray(successRaw)
+      ? successRaw[0]
+      : successRaw || "";
 
-  if (!booking) {
-    return (
-      <div style={{ padding: 40 }}>
-        <h2 style={{ color: "red" }}>
-          Booking not found for invoice: {invoiceId}
-        </h2>
-      </div>
-    );
-  }
+    debug = {
+      searchParams,
+      parsed: {
+        invoiceId,
+        status,
+        success,
+      },
+    };
 
-  // ✅ SUCCESS CONDITION (THIS IS THE FIX)
-  const isSuccess = status === "PAID" || success === "1";
+    // ❌ no invoice id
+    if (!invoiceId) {
+      return (
+        <pre style={{ color: "red", fontSize: "18px" }}>
+          {JSON.stringify({ error: "NO_INVOICE_ID", debug }, null, 2)}
+        </pre>
+      );
+    }
 
-  if (isSuccess) {
-    // update booking
-    await prisma.booking.update({
-      where: { id: booking.id },
-      data: {
-        paymentStatus: "PAID",
-        status: "CONFIRMED",
+    const booking = await prisma.booking.findFirst({
+      where: {
+        paymentTransactionId: invoiceId,
       },
     });
 
-    // redirect to final page
-    redirect(`/bookings/${booking.id}/confirmation`);
+    debug.booking = booking;
+
+    if (!booking) {
+      return (
+        <pre style={{ color: "red", fontSize: "18px" }}>
+          {JSON.stringify({ error: "BOOKING_NOT_FOUND", debug }, null, 2)}
+        </pre>
+      );
+    }
+
+    const isSuccess = status === "PAID" || success === "1";
+
+    debug.isSuccess = isSuccess;
+
+    if (isSuccess) {
+      await prisma.booking.update({
+        where: { id: booking.id },
+        data: {
+          paymentStatus: "PAID",
+          status: "CONFIRMED",
+        },
+      });
+
+      return (
+        <pre style={{ color: "green", fontSize: "18px" }}>
+          {JSON.stringify(
+            {
+              success: true,
+              redirectingTo: `/bookings/${booking.id}/confirmation`,
+              debug,
+            },
+            null,
+            2,
+          )}
+        </pre>
+      );
+
+      // comment redirect temporarily
+      // redirect(`/bookings/${booking.id}/confirmation`);
+    }
+
+    return (
+      <pre style={{ color: "red", fontSize: "18px" }}>
+        {JSON.stringify({ error: "PAYMENT_FAILED", debug }, null, 2)}
+      </pre>
+    );
+  } catch (err: any) {
+    return (
+      <pre style={{ color: "red", fontSize: "18px" }}>
+        {JSON.stringify(
+          { error: "CRASH", message: err?.message, stack: err?.stack },
+          null,
+          2,
+        )}
+      </pre>
+    );
   }
-
-  // ❌ If NOT success
-  return (
-    <div style={{ padding: 40 }}>
-      <h2 style={{ color: "red" }}>Payment not successful</h2>
-
-      <p>invoice_id: {invoiceId}</p>
-      <p>status: {status}</p>
-      <p>success: {success}</p>
-    </div>
-  );
 }
