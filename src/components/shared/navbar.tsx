@@ -10,14 +10,19 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { CURRENCY_COOKIE_KEY, DEFAULT_CURRENCY, SUPPORTED_CURRENCIES, type SupportedCurrency } from "@/lib/currency";
+import {
+  CURRENCY_COOKIE_KEY,
+  DEFAULT_CURRENCY,
+  SUPPORTED_CURRENCIES,
+  type SupportedCurrency,
+} from "@/lib/currency";
 
 const navLinks = [
-  {
-    href: "https://tishoury.amadeusonlinesuite.com/flights?lc=EN",
-    label: "Flights",
-    external: true,
-  },
+  // {
+  //   href: "https://tishoury.amadeusonlinesuite.com/flights?lc=EN",
+  //   label: "Flights",
+  //   external: true,
+  // },
   { href: "/charter-packages", label: "Charter Packages" },
   { href: "/inbound-packages", label: "Inbound Packages" },
   { href: "/regular-packages", label: "Regular Packages" },
@@ -30,18 +35,20 @@ export function Navbar() {
   const { isSignedIn, userId } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [preferredCurrency, setPreferredCurrency] = useState<SupportedCurrency>(() => {
-    if (typeof window === "undefined") {
+  const [preferredCurrency, setPreferredCurrency] = useState<SupportedCurrency>(
+    () => {
+      if (typeof window === "undefined") {
+        return DEFAULT_CURRENCY;
+      }
+      const storedCurrency = window.localStorage.getItem(
+        CURRENCY_COOKIE_KEY,
+      ) as SupportedCurrency | null;
+      if (storedCurrency && SUPPORTED_CURRENCIES.includes(storedCurrency)) {
+        return storedCurrency;
+      }
       return DEFAULT_CURRENCY;
-    }
-    const storedCurrency = window.localStorage.getItem(CURRENCY_COOKIE_KEY) as
-      | SupportedCurrency
-      | null;
-    if (storedCurrency && SUPPORTED_CURRENCIES.includes(storedCurrency)) {
-      return storedCurrency;
-    }
-    return DEFAULT_CURRENCY;
-  });
+    },
+  );
 
   const updatePreferredCurrency = (value: SupportedCurrency) => {
     setPreferredCurrency(value);
@@ -133,7 +140,8 @@ export function Navbar() {
             {navLinks.map((link) => {
               const isActive =
                 !("external" in link && link.external) &&
-                (pathname === link.href || pathname?.startsWith(link.href + "/"));
+                (pathname === link.href ||
+                  pathname?.startsWith(link.href + "/"));
               return (
                 <motion.div
                   key={link.href}
@@ -177,7 +185,9 @@ export function Navbar() {
                 aria-label="Preferred currency"
                 className="h-9 rounded-md border bg-background px-3 text-sm"
                 value={preferredCurrency}
-                onChange={(e) => updatePreferredCurrency(e.target.value as SupportedCurrency)}
+                onChange={(e) =>
+                  updatePreferredCurrency(e.target.value as SupportedCurrency)
+                }
               >
                 {SUPPORTED_CURRENCIES.map((currency) => (
                   <option key={currency} value={currency}>
@@ -300,12 +310,18 @@ export function Navbar() {
                     </motion.div>
                   </SignedOut>
                   <div className="px-4 py-3">
-                    <label className="mb-1 block text-sm font-medium">Currency</label>
+                    <label className="mb-1 block text-sm font-medium">
+                      Currency
+                    </label>
                     <select
                       aria-label="Preferred currency mobile"
                       className="h-9 w-full rounded-md border bg-background px-3 text-sm"
                       value={preferredCurrency}
-                      onChange={(e) => updatePreferredCurrency(e.target.value as SupportedCurrency)}
+                      onChange={(e) =>
+                        updatePreferredCurrency(
+                          e.target.value as SupportedCurrency,
+                        )
+                      }
                     >
                       {SUPPORTED_CURRENCIES.map((currency) => (
                         <option key={currency} value={currency}>

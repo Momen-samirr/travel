@@ -28,7 +28,7 @@ export default clerkMiddleware(async (auth, request) => {
         );
       }
 
-      // Redirect to sign-in with return URL for protected pages
+      // Redirect to sign-in with return URL fors protected pages
       const signInUrl = new URL("/sign-in", request.url);
       const returnPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
       signInUrl.searchParams.set("redirect", returnPath);
