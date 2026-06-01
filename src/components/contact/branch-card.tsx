@@ -36,11 +36,20 @@ const dayNames: Record<string, string> = {
   saturday: "Saturday",
   sunday: "Sunday",
 };
+const dayOrder = [
+  "saturday",
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+];
 
 export function BranchCard({ branch }: BranchCardProps) {
-  const workingHoursEntries = Object.entries(branch.workingHours)
-    .filter(([_, hours]) => hours && hours.trim() !== "")
-    .map(([day, hours]) => [dayNames[day] || day, hours]);
+  const workingHoursEntries = dayOrder
+    .map((day) => [dayNames[day] || day, branch.workingHours?.[day]] as const)
+    .filter(([_, hours]) => hours && hours.trim() !== "");
 
   return (
     <div className="space-y-6">
@@ -139,5 +148,3 @@ export function BranchCard({ branch }: BranchCardProps) {
     </div>
   );
 }
-
-
