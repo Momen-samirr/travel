@@ -291,9 +291,12 @@ export default async function CharterPackageDetailPage({
               hotels={pkg.hotelOptions.map((option) => ({
                 id: option.id,
                 name: option.hotel.name,
+                latitude: option.hotel.latitude,
+                longitude: option.hotel.longitude,
                 address: option.hotel.address,
                 city: option.hotel.city,
                 country: option.hotel.country,
+                placeId: option.hotel.placeId || null,
                 googleMapsIframe: option.hotel.googleMapsIframe,
               }))}
             />

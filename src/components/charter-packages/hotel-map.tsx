@@ -14,6 +14,7 @@ interface Hotel {
   city: string;
   country: string;
   placeId?: string | null;
+  googleMapsIframe?: string | null;
 }
 
 interface HotelMapProps {
