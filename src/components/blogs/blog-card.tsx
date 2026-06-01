@@ -2,7 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, User } from "lucide-react";
@@ -38,6 +44,7 @@ export function BlogCard({ blog }: BlogCardProps) {
               <Image
                 src={blog.featuredImage}
                 alt={blog.title}
+                unoptimized
                 fill
                 className="object-cover transition-all duration-300 ease-in-out group-hover:scale-110"
               />
@@ -77,4 +84,3 @@ export function BlogCard({ blog }: BlogCardProps) {
     </StaggerItem>
   );
 }
-

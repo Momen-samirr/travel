@@ -42,7 +42,6 @@ export function BlogForm({ initialData }: BlogFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
-  const [content, setContent] = useState(initialData?.content || "");
 
   const form = useForm<BlogInput>({
     resolver: zodResolver(blogSchema),
@@ -64,15 +63,16 @@ export function BlogForm({ initialData }: BlogFormProps) {
     setSubmitting(true);
     try {
       const tags = data.tags
-        ? data.tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+        ? data.tags
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter(Boolean)
         : [];
 
       const payload = {
         ...data,
-        content,
         tags: tags.length > 0 ? tags : null,
         featuredImage: data.featuredImage || null,
-        publishedAt: data.isPublished ? new Date() : null,
       };
 
       const url = initialData?.id
@@ -202,11 +202,14 @@ export function BlogForm({ initialData }: BlogFormProps) {
         <FormField
           control={form.control}
           name="content"
-          render={() => (
+          render={({ field }) => (
             <FormItem>
               <FormLabel>Content</FormLabel>
               <FormControl>
-                <BlogEditor content={content} onChange={setContent} />
+                <BlogEditor
+                  content={field.value || ""}
+                  onChange={field.onChange}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -263,9 +266,18 @@ export function BlogForm({ initialData }: BlogFormProps) {
 
         <div className="flex gap-4">
           <Button type="submit" disabled={submitting}>
-            {submitting ? "Saving..." : initialData ? "Update Post" : "Create Post"}
+            {submitting
+              ? "Saving..."
+              : initialData
+                ? "Update Post"
+                : "Create Post"}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()} disabled={submitting}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={submitting}
+          >
             Cancel
           </Button>
         </div>
@@ -273,4 +285,3 @@ export function BlogForm({ initialData }: BlogFormProps) {
     </Form>
   );
 }
-

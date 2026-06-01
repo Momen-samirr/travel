@@ -57,6 +57,7 @@ export default async function BlogDetailPage({
             src={blog.featuredImage}
             alt={blog.title}
             fill
+            unoptimized
             className="object-cover"
           />
         </div>
@@ -106,4 +107,3 @@ export default async function BlogDetailPage({
     </article>
   );
 }
-

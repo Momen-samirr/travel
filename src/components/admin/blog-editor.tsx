@@ -3,7 +3,14 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Button } from "@/components/ui/button";
-import { Bold, Italic, List, ListOrdered, Heading1, Heading2 } from "lucide-react";
+import {
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Heading1,
+  Heading2,
+} from "lucide-react";
 
 interface BlogEditorProps {
   content: string;
@@ -14,6 +21,7 @@ export function BlogEditor({ content, onChange }: BlogEditorProps) {
   const editor = useEditor({
     extensions: [StarterKit],
     content,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
@@ -48,8 +56,12 @@ export function BlogEditor({ content, onChange }: BlogEditorProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editor.isActive("heading", { level: 1 }) ? "bg-gray-100" : ""}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
+          }
+          className={
+            editor.isActive("heading", { level: 1 }) ? "bg-gray-100" : ""
+          }
         >
           <Heading1 className="h-4 w-4" />
         </Button>
@@ -57,8 +69,12 @@ export function BlogEditor({ content, onChange }: BlogEditorProps) {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editor.isActive("heading", { level: 2 }) ? "bg-gray-100" : ""}
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+          className={
+            editor.isActive("heading", { level: 2 }) ? "bg-gray-100" : ""
+          }
         >
           <Heading2 className="h-4 w-4" />
         </Button>
@@ -88,4 +104,3 @@ export function BlogEditor({ content, onChange }: BlogEditorProps) {
     </div>
   );
 }
-

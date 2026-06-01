@@ -13,7 +13,7 @@ const blogSchema = z.object({
   category: z.string().optional().nullable(),
   tags: z.array(z.string()).optional().nullable(),
   isPublished: z.boolean(),
-  publishedAt: z.date().optional().nullable(),
+publishedAt: z.coerce.date().optional().nullable(),
   seoTitle: z.string().optional().nullable(),
   seoDescription: z.string().optional().nullable(),
 });
@@ -81,14 +81,23 @@ export async function POST(request: NextRequest) {
     const wordCount = data.content.replace(/<[^>]*>/g, "").split(/\s+/).length;
     const readingTime = Math.ceil(wordCount / 200);
 
-    const blog = await prisma.blog.create({
-      data: {
-        ...data,
-        authorId: user.id,
-        tags: data.tags as any,
-        readingTime,
-      },
-    });
+   const blog = await prisma.blog.create({
+  data: {
+    title: data.title,
+    slug: data.slug,
+    content: data.content,
+    excerpt: data.excerpt,
+    featuredImage: data.featuredImage,
+    category: data.category,
+    tags: data.tags as any,
+    isPublished: data.isPublished,
+    publishedAt: data.isPublished ? data.publishedAt || new Date() : null,
+    seoTitle: data.seoTitle,
+    seoDescription: data.seoDescription,
+    authorId: user.id,
+    readingTime,
+  },
+});
 
     await logActivity({
       userId: user.id,
