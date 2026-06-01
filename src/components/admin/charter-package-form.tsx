@@ -90,36 +90,36 @@ const DEFAULT_INBOUND_TYPE_CONFIG: InboundTypeConfig = {
   transferOptions: [],
 };
 
-export function CharterPackageForm({
-  initialData,
-}: CharterPackageFormProps) {
+export function CharterPackageForm({ initialData }: CharterPackageFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const inboundConfigResult = inboundTypeConfigSchema.safeParse(initialData?.typeConfig);
+  const inboundConfigResult = inboundTypeConfigSchema.safeParse(
+    initialData?.typeConfig,
+  );
   const initialInboundConfig = inboundConfigResult.success
     ? inboundConfigResult.data
     : DEFAULT_INBOUND_TYPE_CONFIG;
   const [mainImage, setMainImage] = useState<string | null>(
-    initialData?.mainImage || null
+    initialData?.mainImage || null,
   );
   const [gallery, setGallery] = useState<string[]>(
-    (initialData?.gallery as string[]) || []
+    (initialData?.gallery as string[]) || [],
   );
   const [includedServices, setIncludedServices] = useState<string[]>(
-    initialData?.includedServices || []
+    initialData?.includedServices || [],
   );
   const [excludedServices, setExcludedServices] = useState<string[]>(
-    initialData?.excludedServices || []
+    initialData?.excludedServices || [],
   );
   const [excursionProgram, setExcursionProgram] = useState<string[]>(
-    initialData?.excursionProgram || []
+    initialData?.excursionProgram || [],
   );
   const [requiredDocuments, setRequiredDocuments] = useState<string[]>(
-    initialData?.requiredDocuments || []
+    initialData?.requiredDocuments || [],
   );
   const [departureOptions, setDepartureOptions] = useState<
-    (CharterDepartureOptionInput & { 
-      id?: string; 
+    (CharterDepartureOptionInput & {
+      id?: string;
       hotelPricings?: Array<{
         hotelOptionId: string;
         currency: string;
@@ -153,7 +153,7 @@ export function CharterPackageForm({
       basePrice: override.basePrice ?? null,
       priceRangeMin: override.priceRangeMin ?? null,
       priceRangeMax: override.priceRangeMax ?? null,
-    })) || []
+    })) || [],
   );
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -164,9 +164,8 @@ export function CharterPackageForm({
   const [inboundIncludeInput, setInboundIncludeInput] = useState("");
   const [inboundExcludeInput, setInboundExcludeInput] = useState("");
   const [inboundPickupInput, setInboundPickupInput] = useState("");
-  const [inboundTypeConfig, setInboundTypeConfig] = useState<InboundTypeConfig>(
-    initialInboundConfig
-  );
+  const [inboundTypeConfig, setInboundTypeConfig] =
+    useState<InboundTypeConfig>(initialInboundConfig);
 
   useEffect(() => {
     fetch("/api/hotels?isActive=true")
@@ -326,7 +325,7 @@ export function CharterPackageForm({
 
   const addInboundListItem = (
     key: "includes" | "excludes" | "pickupLocations",
-    value: string
+    value: string,
   ) => {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -339,7 +338,7 @@ export function CharterPackageForm({
 
   const removeInboundListItem = (
     key: "includes" | "excludes" | "pickupLocations",
-    index: number
+    index: number,
   ) => {
     setInboundTypeConfig((prev) => ({
       ...prev,
@@ -364,12 +363,12 @@ export function CharterPackageForm({
   const updateInboundItineraryItem = (
     index: number,
     field: "dayLabel" | "title" | "description",
-    value: string
+    value: string,
   ) => {
     setInboundTypeConfig((prev) => ({
       ...prev,
       itinerary: prev.itinerary.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: value } : item,
       ),
     }));
   };
@@ -398,12 +397,12 @@ export function CharterPackageForm({
   const updateInboundTransferOption = (
     index: number,
     field: "id" | "name" | "price",
-    value: string | number
+    value: string | number,
   ) => {
     setInboundTypeConfig((prev) => ({
       ...prev,
       transferOptions: prev.transferOptions.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
+        i === index ? { ...item, [field]: value } : item,
       ),
     }));
   };
@@ -432,11 +431,7 @@ export function CharterPackageForm({
     ]);
   };
 
-  const updateDepartureOption = (
-    index: number,
-    field: string,
-    value: any
-  ) => {
+  const updateDepartureOption = (index: number, field: string, value: any) => {
     const updated = [...departureOptions];
     updated[index] = { ...updated[index], [field]: value };
     setDepartureOptions(updated);
@@ -525,6 +520,48 @@ export function CharterPackageForm({
       }
 
       const savedPackage = await response.json();
+      if (initialData?.id && !isInbound) {
+        const currentDepartureIds = departureOptions
+          .map((option) => option.id)
+          .filter(Boolean);
+
+        const deletedDepartureIds = (initialData.departureOptions || [])
+          .map((option) => option.id)
+          .filter((id) => id && !currentDepartureIds.includes(id));
+
+        await Promise.all(
+          deletedDepartureIds.map(async (id) => {
+            const response = await fetch(
+              `/api/charter-packages/${savedPackage.id}/departure-options/${id}`,
+              { method: "DELETE" },
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to delete removed departure option");
+            }
+          }),
+        );
+      }
+      if (initialData?.id && !isInbound) {
+        const currentDepartureIds = departureOptions
+          .map((option) => option.id)
+          .filter(Boolean);
+
+        const deletedDepartureIds = (initialData.departureOptions || [])
+          .map((option) => option.id)
+          .filter((id) => id && !currentDepartureIds.includes(id));
+
+        await Promise.all(
+          deletedDepartureIds.map((id) =>
+            fetch(
+              `/api/charter-packages/${savedPackage.id}/departure-options/${id}`,
+              {
+                method: "DELETE",
+              },
+            ),
+          ),
+        );
+      }
 
       if (!isInbound) {
         // Save hotel options first to get their IDs
@@ -533,7 +570,7 @@ export function CharterPackageForm({
           const option = hotelOptions[i];
           // Use index-based temp ID for new options, existing ID for saved options
           const tempKey = option.id || `temp_${i}`;
-          
+
           if (option.id) {
             // Existing hotel option - update it
             await fetch(
@@ -542,7 +579,7 @@ export function CharterPackageForm({
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(option),
-              }
+              },
             );
             hotelOptionIdMap.set(tempKey, option.id);
           } else {
@@ -553,10 +590,12 @@ export function CharterPackageForm({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(option),
-              }
+              },
             );
             if (!response.ok) {
-              throw new Error(`Failed to save hotel option: ${response.statusText}`);
+              throw new Error(
+                `Failed to save hotel option: ${response.statusText}`,
+              );
             }
             const savedOption = await response.json();
             // Map the temp key to the new ID
@@ -581,21 +620,26 @@ export function CharterPackageForm({
           }> = [];
 
           if (option.hotelPricings && option.hotelPricings.length > 0) {
-            mappedHotelPricings = option.hotelPricings.map((hp) => {
-              // Map hotel option ID
-              const mappedHotelOptionId = hotelOptionIdMap.get(hp.hotelOptionId) || 
-                (hotelOptions.some((opt) => opt.id === hp.hotelOptionId) ? hp.hotelOptionId : null);
-              
-              if (!mappedHotelOptionId) {
-                throw new Error(`Hotel option ${hp.hotelOptionId} not found`);
-              }
+            mappedHotelPricings = option.hotelPricings
+              .map((hp) => {
+                // Map hotel option ID
+                const mappedHotelOptionId =
+                  hotelOptionIdMap.get(hp.hotelOptionId) ||
+                  (hotelOptions.some((opt) => opt.id === hp.hotelOptionId)
+                    ? hp.hotelOptionId
+                    : null);
 
-              return {
-                hotelOptionId: mappedHotelOptionId,
-                currency: hp.currency || DEFAULT_CURRENCY,
-                roomTypePricings: hp.roomTypePricings || [],
-              };
-            }).filter((hp) => hp.hotelOptionId !== null);
+                if (!mappedHotelOptionId) {
+                  throw new Error(`Hotel option ${hp.hotelOptionId} not found`);
+                }
+
+                return {
+                  hotelOptionId: mappedHotelOptionId,
+                  currency: hp.currency || DEFAULT_CURRENCY,
+                  roomTypePricings: hp.roomTypePricings || [],
+                };
+              })
+              .filter((hp) => hp.hotelOptionId !== null);
           }
 
           const departureData = {
@@ -617,12 +661,14 @@ export function CharterPackageForm({
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(departureData),
-              }
+              },
             );
             if (!response.ok) {
               const error = await response.json().catch(() => ({}));
               console.error("Error updating departure option:", error);
-              throw new Error(error.message || "Failed to update departure option");
+              throw new Error(
+                error.message || "Failed to update departure option",
+              );
             }
           } else {
             const response = await fetch(
@@ -631,12 +677,14 @@ export function CharterPackageForm({
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(departureData),
-              }
+              },
             );
             if (!response.ok) {
               const error = await response.json().catch(() => ({}));
               console.error("Error creating departure option:", error);
-              throw new Error(error.message || "Failed to create departure option");
+              throw new Error(
+                error.message || "Failed to create departure option",
+              );
             }
           }
         }
@@ -649,7 +697,7 @@ export function CharterPackageForm({
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(addon),
-              }
+              },
             );
           } else {
             await fetch(`/api/charter-packages/${savedPackage.id}/addons`, {
@@ -697,9 +745,14 @@ export function CharterPackageForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-8">
+      <form
+        onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)}
+        className="space-y-8"
+      >
         <Tabs defaultValue="basic" className="w-full">
-          <TabsList className={`grid w-full ${isInbound ? "grid-cols-4" : "grid-cols-6"}`}>
+          <TabsList
+            className={`grid w-full ${isInbound ? "grid-cols-4" : "grid-cols-6"}`}
+          >
             <TabsTrigger value="basic">Basic Info</TabsTrigger>
             <TabsTrigger value="pricing">Pricing</TabsTrigger>
             {isInbound ? (
@@ -744,7 +797,8 @@ export function CharterPackageForm({
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Select the type of package. Charter includes flights, Inbound is for local tourism.
+                      Select the type of package. Charter includes flights,
+                      Inbound is for local tourism.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -758,13 +812,17 @@ export function CharterPackageForm({
                   <FormItem>
                     <FormLabel>Package Name</FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
+                      <Input
+                        {...field}
                         onChange={(e) => {
                           field.onChange(e);
                           // Auto-generate slug from name if slug is empty
                           const currentSlug = form.getValues("slug");
-                          if (!currentSlug || currentSlug === slugify(form.getValues("name") || "")) {
+                          if (
+                            !currentSlug ||
+                            currentSlug ===
+                              slugify(form.getValues("name") || "")
+                          ) {
                             form.setValue("slug", slugify(e.target.value));
                           }
                         }}
@@ -782,22 +840,25 @@ export function CharterPackageForm({
                   <FormItem>
                     <FormLabel>Slug</FormLabel>
                     <FormControl>
-                      <Input 
-                        {...field} 
+                      <Input
+                        {...field}
                         onChange={(e) => {
                           field.onChange(e);
                         }}
                         onBlur={(e) => {
                           // Auto-generate slug if empty when name is available
                           if (!e.target.value && form.getValues("name")) {
-                            const generatedSlug = slugify(form.getValues("name"));
+                            const generatedSlug = slugify(
+                              form.getValues("name"),
+                            );
                             field.onChange(generatedSlug);
                           }
                         }}
                       />
                     </FormControl>
                     <FormDescription>
-                      URL-friendly version of the name (auto-generated from name if empty)
+                      URL-friendly version of the name (auto-generated from name
+                      if empty)
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -958,7 +1019,9 @@ export function CharterPackageForm({
                         size="sm"
                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
                         onClick={() => {
-                          const newGallery = gallery.filter((_, i) => i !== index);
+                          const newGallery = gallery.filter(
+                            (_, i) => i !== index,
+                          );
                           setGallery(newGallery);
                           form.setValue("gallery", newGallery);
                         }}
@@ -989,10 +1052,7 @@ export function CharterPackageForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Currency *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                    >
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select currency" />
@@ -1025,7 +1085,7 @@ export function CharterPackageForm({
                         value={field.value || ""}
                         onChange={(e) =>
                           field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : null
+                            e.target.value ? parseFloat(e.target.value) : null,
                           )
                         }
                       />
@@ -1049,7 +1109,7 @@ export function CharterPackageForm({
                         value={field.value || ""}
                         onChange={(e) =>
                           field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : null
+                            e.target.value ? parseFloat(e.target.value) : null,
                           )
                         }
                       />
@@ -1073,7 +1133,7 @@ export function CharterPackageForm({
                         value={field.value || ""}
                         onChange={(e) =>
                           field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : null
+                            e.target.value ? parseFloat(e.target.value) : null,
                           )
                         }
                       />
@@ -1097,7 +1157,7 @@ export function CharterPackageForm({
                         value={field.value || ""}
                         onChange={(e) =>
                           field.onChange(
-                            e.target.value ? parseFloat(e.target.value) : null
+                            e.target.value ? parseFloat(e.target.value) : null,
                           )
                         }
                       />
@@ -1152,18 +1212,24 @@ export function CharterPackageForm({
               <CardContent className="space-y-4">
                 {priceOverrides.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No overrides configured. Base package currency values will be used with FX fallback.
+                    No overrides configured. Base package currency values will
+                    be used with FX fallback.
                   </p>
                 ) : null}
                 {priceOverrides.map((override, index) => (
-                  <div key={`${override.currency}-${index}`} className="grid grid-cols-1 gap-3 rounded-lg border p-4 md:grid-cols-5">
+                  <div
+                    key={`${override.currency}-${index}`}
+                    className="grid grid-cols-1 gap-3 rounded-lg border p-4 md:grid-cols-5"
+                  >
                     <div>
                       <label className="text-sm font-medium">Currency</label>
                       <Select
                         value={override.currency}
                         onValueChange={(value) =>
                           setPriceOverrides((prev) =>
-                            prev.map((item, i) => (i === index ? { ...item, currency: value } : item))
+                            prev.map((item, i) =>
+                              i === index ? { ...item, currency: value } : item,
+                            ),
                           )
                         }
                       >
@@ -1192,10 +1258,12 @@ export function CharterPackageForm({
                               i === index
                                 ? {
                                     ...item,
-                                    basePrice: e.target.value ? Number(e.target.value) : null,
+                                    basePrice: e.target.value
+                                      ? Number(e.target.value)
+                                      : null,
                                   }
-                                : item
-                            )
+                                : item,
+                            ),
                           )
                         }
                       />
@@ -1213,10 +1281,12 @@ export function CharterPackageForm({
                               i === index
                                 ? {
                                     ...item,
-                                    priceRangeMin: e.target.value ? Number(e.target.value) : null,
+                                    priceRangeMin: e.target.value
+                                      ? Number(e.target.value)
+                                      : null,
                                   }
-                                : item
-                            )
+                                : item,
+                            ),
                           )
                         }
                       />
@@ -1234,10 +1304,12 @@ export function CharterPackageForm({
                               i === index
                                 ? {
                                     ...item,
-                                    priceRangeMax: e.target.value ? Number(e.target.value) : null,
+                                    priceRangeMax: e.target.value
+                                      ? Number(e.target.value)
+                                      : null,
                                   }
-                                : item
-                            )
+                                : item,
+                            ),
                           )
                         }
                       />
@@ -1247,7 +1319,9 @@ export function CharterPackageForm({
                         type="button"
                         variant="destructive"
                         onClick={() =>
-                          setPriceOverrides((prev) => prev.filter((_, i) => i !== index))
+                          setPriceOverrides((prev) =>
+                            prev.filter((_, i) => i !== index),
+                          )
                         }
                       >
                         Remove
@@ -1267,25 +1341,35 @@ export function CharterPackageForm({
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium">Campaign Title *</label>
+                    <label className="text-sm font-medium">
+                      Campaign Title *
+                    </label>
                     <Input
                       value={inboundTypeConfig.header.campaignTitle}
                       onChange={(e) =>
                         setInboundTypeConfig((prev) => ({
                           ...prev,
-                          header: { ...prev.header, campaignTitle: e.target.value },
+                          header: {
+                            ...prev.header,
+                            campaignTitle: e.target.value,
+                          },
                         }))
                       }
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Duration Text *</label>
+                    <label className="text-sm font-medium">
+                      Duration Text *
+                    </label>
                     <Input
                       value={inboundTypeConfig.header.durationText}
                       onChange={(e) =>
                         setInboundTypeConfig((prev) => ({
                           ...prev,
-                          header: { ...prev.header, durationText: e.target.value },
+                          header: {
+                            ...prev.header,
+                            durationText: e.target.value,
+                          },
                         }))
                       }
                     />
@@ -1330,13 +1414,18 @@ export function CharterPackageForm({
                     </div>
                     <ul className="space-y-1">
                       {inboundTypeConfig.includes.map((item, index) => (
-                        <li key={`${item}-${index}`} className="flex items-center justify-between text-sm">
+                        <li
+                          key={`${item}-${index}`}
+                          className="flex items-center justify-between text-sm"
+                        >
                           <span>{item}</span>
                           <Button
                             type="button"
                             size="sm"
                             variant="ghost"
-                            onClick={() => removeInboundListItem("includes", index)}
+                            onClick={() =>
+                              removeInboundListItem("includes", index)
+                            }
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -1369,13 +1458,18 @@ export function CharterPackageForm({
                     </div>
                     <ul className="space-y-1">
                       {inboundTypeConfig.excludes.map((item, index) => (
-                        <li key={`${item}-${index}`} className="flex items-center justify-between text-sm">
+                        <li
+                          key={`${item}-${index}`}
+                          className="flex items-center justify-between text-sm"
+                        >
                           <span>{item}</span>
                           <Button
                             type="button"
                             size="sm"
                             variant="ghost"
-                            onClick={() => removeInboundListItem("excludes", index)}
+                            onClick={() =>
+                              removeInboundListItem("excludes", index)
+                            }
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -1398,9 +1492,14 @@ export function CharterPackageForm({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {inboundTypeConfig.itinerary.map((item, index) => (
-                    <div key={index} className="border rounded-lg p-4 space-y-3">
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
                       <div className="flex justify-between items-center">
-                        <span className="font-medium">Itinerary Item {index + 1}</span>
+                        <span className="font-medium">
+                          Itinerary Item {index + 1}
+                        </span>
                         <Button
                           type="button"
                           variant="destructive"
@@ -1413,14 +1512,22 @@ export function CharterPackageForm({
                       <Input
                         value={item.dayLabel}
                         onChange={(e) =>
-                          updateInboundItineraryItem(index, "dayLabel", e.target.value)
+                          updateInboundItineraryItem(
+                            index,
+                            "dayLabel",
+                            e.target.value,
+                          )
                         }
                         placeholder="Day label (e.g. Day 1)"
                       />
                       <Input
                         value={item.title}
                         onChange={(e) =>
-                          updateInboundItineraryItem(index, "title", e.target.value)
+                          updateInboundItineraryItem(
+                            index,
+                            "title",
+                            e.target.value,
+                          )
                         }
                         placeholder="Title"
                       />
@@ -1428,7 +1535,11 @@ export function CharterPackageForm({
                         rows={3}
                         value={item.description}
                         onChange={(e) =>
-                          updateInboundItineraryItem(index, "description", e.target.value)
+                          updateInboundItineraryItem(
+                            index,
+                            "description",
+                            e.target.value,
+                          )
                         }
                         placeholder="Description"
                       />
@@ -1444,7 +1555,9 @@ export function CharterPackageForm({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div>
-                      <label className="text-sm font-medium">Current Price *</label>
+                      <label className="text-sm font-medium">
+                        Current Price *
+                      </label>
                       <Input
                         type="number"
                         step="0.01"
@@ -1461,7 +1574,9 @@ export function CharterPackageForm({
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Old Price (Optional)</label>
+                      <label className="text-sm font-medium">
+                        Old Price (Optional)
+                      </label>
                       <Input
                         type="number"
                         step="0.01"
@@ -1471,7 +1586,9 @@ export function CharterPackageForm({
                             ...prev,
                             offer: {
                               ...prev.offer,
-                              oldPrice: e.target.value ? Number(e.target.value) : null,
+                              oldPrice: e.target.value
+                                ? Number(e.target.value)
+                                : null,
                             },
                           }))
                         }
@@ -1486,7 +1603,8 @@ export function CharterPackageForm({
                             ...prev,
                             offer: {
                               ...prev.offer,
-                              currency: value as InboundTypeConfig["offer"]["currency"],
+                              currency:
+                                value as InboundTypeConfig["offer"]["currency"],
                             },
                           }))
                         }
@@ -1508,7 +1626,10 @@ export function CharterPackageForm({
                       onChange={(e) =>
                         setInboundTypeConfig((prev) => ({
                           ...prev,
-                          offer: { ...prev.offer, perPersonLabel: e.target.value },
+                          offer: {
+                            ...prev.offer,
+                            perPersonLabel: e.target.value,
+                          },
                         }))
                       }
                       placeholder="Per person label"
@@ -1518,7 +1639,10 @@ export function CharterPackageForm({
                       onChange={(e) =>
                         setInboundTypeConfig((prev) => ({
                           ...prev,
-                          offer: { ...prev.offer, validUntilText: e.target.value },
+                          offer: {
+                            ...prev.offer,
+                            validUntilText: e.target.value,
+                          },
                         }))
                       }
                       placeholder="Valid-until text"
@@ -1558,7 +1682,10 @@ export function CharterPackageForm({
                       onChange={(e) =>
                         setInboundTypeConfig((prev) => ({
                           ...prev,
-                          contact: { ...prev.contact, primaryAddress: e.target.value },
+                          contact: {
+                            ...prev.contact,
+                            primaryAddress: e.target.value,
+                          },
                         }))
                       }
                       placeholder="Primary address"
@@ -1596,7 +1723,10 @@ export function CharterPackageForm({
                       <Button
                         type="button"
                         onClick={() => {
-                          addInboundListItem("pickupLocations", inboundPickupInput);
+                          addInboundListItem(
+                            "pickupLocations",
+                            inboundPickupInput,
+                          );
                           setInboundPickupInput("");
                         }}
                       >
@@ -1605,13 +1735,18 @@ export function CharterPackageForm({
                     </div>
                     <ul className="space-y-1">
                       {inboundTypeConfig.pickupLocations.map((item, index) => (
-                        <li key={`${item}-${index}`} className="flex items-center justify-between text-sm">
+                        <li
+                          key={`${item}-${index}`}
+                          className="flex items-center justify-between text-sm"
+                        >
                           <span>{item}</span>
                           <Button
                             type="button"
                             size="sm"
                             variant="ghost"
-                            onClick={() => removeInboundListItem("pickupLocations", index)}
+                            onClick={() =>
+                              removeInboundListItem("pickupLocations", index)
+                            }
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -1633,7 +1768,10 @@ export function CharterPackageForm({
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {inboundTypeConfig.transferOptions.map((item, index) => (
-                      <div key={index} className="border rounded-lg p-3 space-y-2">
+                      <div
+                        key={index}
+                        className="border rounded-lg p-3 space-y-2"
+                      >
                         <div className="flex justify-end">
                           <Button
                             type="button"
@@ -1647,14 +1785,22 @@ export function CharterPackageForm({
                         <Input
                           value={item.id}
                           onChange={(e) =>
-                            updateInboundTransferOption(index, "id", e.target.value)
+                            updateInboundTransferOption(
+                              index,
+                              "id",
+                              e.target.value,
+                            )
                           }
                           placeholder="ID (unique key)"
                         />
                         <Input
                           value={item.name}
                           onChange={(e) =>
-                            updateInboundTransferOption(index, "name", e.target.value)
+                            updateInboundTransferOption(
+                              index,
+                              "name",
+                              e.target.value,
+                            )
                           }
                           placeholder="Label"
                         />
@@ -1666,7 +1812,7 @@ export function CharterPackageForm({
                             updateInboundTransferOption(
                               index,
                               "price",
-                              Number(e.target.value) || 0
+                              Number(e.target.value) || 0,
                             )
                           }
                           placeholder="Price"
@@ -1680,623 +1826,133 @@ export function CharterPackageForm({
           )}
 
           {!isInbound && (
-          <TabsContent value="departures" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Departure Options</h3>
-              <Button type="button" onClick={addDepartureOption}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Departure
-              </Button>
-            </div>
+            <TabsContent value="departures" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Departure Options</h3>
+                <Button type="button" onClick={addDepartureOption}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Departure
+                </Button>
+              </div>
 
-            {departureOptions.map((option, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Departure Option {index + 1}</CardTitle>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeDepartureOption(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">
-                        Departure Airport
-                      </label>
-                      <Input
-                        value={option.departureAirport}
-                        onChange={(e) =>
-                          updateDepartureOption(
-                            index,
-                            "departureAirport",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">
-                        Arrival Airport
-                      </label>
-                      <Input
-                        value={option.arrivalAirport}
-                        onChange={(e) =>
-                          updateDepartureOption(
-                            index,
-                            "arrivalAirport",
-                            e.target.value
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">
-                        Departure Date
-                      </label>
-                      <Input
-                        type="datetime-local"
-                        value={
-                          option.departureDate instanceof Date
-                            ? option.departureDate.toISOString().slice(0, 16)
-                            : new Date(option.departureDate)
-                                .toISOString()
-                                .slice(0, 16)
-                        }
-                        onChange={(e) =>
-                          updateDepartureOption(
-                            index,
-                            "departureDate",
-                            new Date(e.target.value)
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Return Date</label>
-                      <Input
-                        type="datetime-local"
-                        value={
-                          option.returnDate instanceof Date
-                            ? option.returnDate.toISOString().slice(0, 16)
-                            : new Date(option.returnDate)
-                                .toISOString()
-                                .slice(0, 16)
-                        }
-                        onChange={(e) =>
-                          updateDepartureOption(
-                            index,
-                            "returnDate",
-                            new Date(e.target.value)
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">
-                        Price Modifier (Optional)
-                      </label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={option.priceModifier || ""}
-                        onChange={(e) =>
-                          updateDepartureOption(
-                            index,
-                            "priceModifier",
-                            e.target.value ? parseFloat(e.target.value) : null
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Currency *</label>
-                      <Select
-                        value={option.currency || DEFAULT_CURRENCY}
-                        onValueChange={(value) =>
-                          updateDepartureOption(index, "currency", value)
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select currency" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SUPPORTED_CURRENCIES.map((currency) => (
-                            <SelectItem key={currency} value={currency}>
-                              {currency}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">
-                      Flight Info (Optional)
-                    </label>
-                    <Textarea
-                      value={option.flightInfo || ""}
-                      onChange={(e) =>
-                        updateDepartureOption(
-                          index,
-                          "flightInfo",
-                          e.target.value || null
-                        )
-                      }
-                      rows={2}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Hotel Pricing Configuration
-                    </label>
-                    <div className="border rounded-lg p-4 space-y-4">
-                      {hotelOptions.length === 0 ? (
-                        <p className="text-sm text-muted-foreground">
-                          No hotel options available. Please add hotel options first.
-                        </p>
-                      ) : (
-                        hotelOptions.map((hotelOpt, hotelIndex) => {
-                          const hotel = hotels.find((h) => h.id === hotelOpt.hotelId);
-                          const hotelOptIdentifier = hotelOpt.id || `temp_${hotelIndex}`;
-                          const hotelPricing = (option.hotelPricings || []).find(
-                            (hp) => hp.hotelOptionId === hotelOptIdentifier
-                          );
-                          const isSelected = !!hotelPricing;
-
-                          const addHotelPricing = () => {
-                            const currentPricings = option.hotelPricings || [];
-                            const newPricing = {
-                              hotelOptionId: hotelOptIdentifier,
-                              currency: DEFAULT_CURRENCY,
-                              roomTypePricings: [
-                                { roomType: "SINGLE" as const, adultPrice: 0, childPrice6to12: null, childPrice2to6: null, infantPrice: null, currency: DEFAULT_CURRENCY },
-                                { roomType: "DOUBLE" as const, adultPrice: 0, childPrice6to12: null, childPrice2to6: null, infantPrice: null, currency: DEFAULT_CURRENCY },
-                              ],
-                            };
-                            updateDepartureOption(index, "hotelPricings", [...currentPricings, newPricing]);
-                          };
-
-                          const removeHotelPricing = () => {
-                            const currentPricings = option.hotelPricings || [];
-                            updateDepartureOption(
-                              index,
-                              "hotelPricings",
-                              currentPricings.filter((hp) => hp.hotelOptionId !== hotelOptIdentifier)
-                            );
-                          };
-
-                          const updateRoomTypePricing = (roomType: "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD", field: string, value: any) => {
-                            if (!hotelPricing) return;
-                            const updatedPricings = (option.hotelPricings || []).map((hp) => {
-                              if (hp.hotelOptionId === hotelOptIdentifier) {
-                                const updatedRoomTypes = hp.roomTypePricings.map((rtp) =>
-                                  rtp.roomType === roomType ? { ...rtp, [field]: value } : rtp
-                                );
-                                return { ...hp, roomTypePricings: updatedRoomTypes };
-                              }
-                              return hp;
-                            });
-                            updateDepartureOption(index, "hotelPricings", updatedPricings);
-                          };
-
-                          const addRoomType = (roomType: "TRIPLE" | "QUAD") => {
-                            if (!hotelPricing) return;
-                            const updatedPricings = (option.hotelPricings || []).map((hp) => {
-                              if (hp.hotelOptionId === hotelOptIdentifier) {
-                                const newRoomType = {
-                                  roomType,
-                                  adultPrice: 0,
-                                  childPrice6to12: null,
-                                  childPrice2to6: null,
-                                  infantPrice: null,
-                                  currency: hp.currency || DEFAULT_CURRENCY,
-                                };
-                                return { ...hp, roomTypePricings: [...hp.roomTypePricings, newRoomType] };
-                              }
-                              return hp;
-                            });
-                            updateDepartureOption(index, "hotelPricings", updatedPricings);
-                          };
-
-                          return (
-                            <div key={hotelOpt.id || `temp_${hotelIndex}`} className="border rounded-lg p-4">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center space-x-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={isSelected}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        addHotelPricing();
-                                      } else {
-                                        removeHotelPricing();
-                                      }
-                                    }}
-                                    className="h-4 w-4"
-                                  />
-                                  <label className="text-sm font-medium cursor-pointer">
-                                    {hotel ? `${hotel.name} (${hotel.city}, ${hotel.country})` : `Hotel ID: ${hotelOpt.hotelId || "Not selected"}`}
-                                  </label>
-                                </div>
-                              </div>
-                              {isSelected && hotelPricing && (
-                                <div className="ml-6 space-y-4 mt-4">
-                                  <div>
-                                    <label className="text-xs font-medium">Currency</label>
-                                    <Select
-                                      value={hotelPricing.currency || DEFAULT_CURRENCY}
-                                      onValueChange={(value) => {
-                                        const updated = (option.hotelPricings || []).map((hp) =>
-                                          hp.hotelOptionId === hotelOptIdentifier
-                                            ? { ...hp, currency: value }
-                                            : hp
-                                        );
-                                        updateDepartureOption(index, "hotelPricings", updated);
-                                      }}
-                                    >
-                                      <SelectTrigger className="mt-1">
-                                        <SelectValue placeholder="Select currency" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {SUPPORTED_CURRENCIES.map((currency) => (
-                                          <SelectItem key={currency} value={currency}>
-                                            {currency}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
-                                  {hotelPricing.roomTypePricings.map((rtp, rtpIndex) => (
-                                    <div key={rtpIndex} className="border rounded p-3 space-y-2">
-                                      <div className="font-semibold text-sm">{rtp.roomType} Room</div>
-                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                        <div>
-                                          <label className="text-xs">Adult Price</label>
-                                          <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={rtp.adultPrice}
-                                            onChange={(e) =>
-                                              updateRoomTypePricing(rtp.roomType, "adultPrice", parseFloat(e.target.value) || 0)
-                                            }
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="text-xs">Child Price (6-12 Years)</label>
-                                          <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={rtp.childPrice6to12 || ""}
-                                            onChange={(e) =>
-                                              updateRoomTypePricing(rtp.roomType, "childPrice6to12", e.target.value ? parseFloat(e.target.value) : null)
-                                            }
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="text-xs">Child Price (2-6 Years)</label>
-                                          <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={rtp.childPrice2to6 || ""}
-                                            onChange={(e) =>
-                                              updateRoomTypePricing(rtp.roomType, "childPrice2to6", e.target.value ? parseFloat(e.target.value) : null)
-                                            }
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="text-xs">Infant Price (0-2 Years)</label>
-                                          <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={rtp.infantPrice || ""}
-                                            onChange={(e) =>
-                                              updateRoomTypePricing(rtp.roomType, "infantPrice", e.target.value ? parseFloat(e.target.value) : null)
-                                            }
-                                          />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                  <div className="flex gap-2">
-                                    {!hotelPricing.roomTypePricings.some((rtp) => rtp.roomType === "TRIPLE") && (
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addRoomType("TRIPLE")}
-                                      >
-                                        Add Triple Room
-                                      </Button>
-                                    )}
-                                    {!hotelPricing.roomTypePricings.some((rtp) => rtp.roomType === "QUAD") && (
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addRoomType("QUAD")}
-                                      >
-                                        Add Quad Room
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                    {(!option.hotelPricings || option.hotelPricings.length === 0) && (
-                      <p className="text-sm text-destructive mt-1">
-                        At least one hotel with pricing must be configured
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-          )}
-
-          {!isInbound && (
-          <TabsContent value="hotels" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Hotel Options</h3>
-              <Button type="button" onClick={addHotelOption}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Hotel
-              </Button>
-            </div>
-
-            {hotelOptions.map((option, index) => (
-              <Card key={index}>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Hotel Option {index + 1}</CardTitle>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => removeHotelOption(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Hotel</label>
-                    <Select
-                      value={option.hotelId || ""}
-                      onValueChange={(value) =>
-                        updateHotelOption(index, "hotelId", value)
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a hotel" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {hotels.map((hotel) => (
-                          <SelectItem key={hotel.id} value={hotel.id}>
-                            {hotel.name} - {hotel.city}, {hotel.country}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">
-                        Star Rating (Optional)
-                      </label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="5"
-                        value={option.starRating || ""}
-                        onChange={(e) =>
-                          updateHotelOption(
-                            index,
-                            "starRating",
-                            e.target.value ? parseInt(e.target.value) : null
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">
-                        Booking Rating (Optional)
-                      </label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        min="0"
-                        max="10"
-                        value={option.bookingRating || ""}
-                        onChange={(e) =>
-                          updateHotelOption(
-                            index,
-                            "bookingRating",
-                            e.target.value ? parseFloat(e.target.value) : null
-                          )
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">
-                        Distance from Center (km, Optional)
-                      </label>
-                      <Input
-                        type="number"
-                        step="0.1"
-                        value={option.distanceFromCenter || ""}
-                        onChange={(e) =>
-                          updateHotelOption(
-                            index,
-                            "distanceFromCenter",
-                            e.target.value ? parseFloat(e.target.value) : null
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </TabsContent>
-          )}
-
-          {!isInbound && (
-          <TabsContent value="services" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Included Services</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={serviceInput}
-                    onChange={(e) => setServiceInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addService("included");
-                      }
-                    }}
-                    placeholder="Add included service"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => addService("included")}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {includedServices.map((service, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
-                    >
-                      <span>{service}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeService(index, "included")}
-                        className="hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Excluded Services</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={serviceInput}
-                    onChange={(e) => setServiceInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addService("excluded");
-                      }
-                    }}
-                    placeholder="Add excluded service"
-                  />
-                  <Button
-                    type="button"
-                    onClick={() => addService("excluded")}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {excludedServices.map((service, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center gap-2 bg-destructive/10 text-destructive px-3 py-1 rounded-full text-sm"
-                    >
-                      <span>{service}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeService(index, "excluded")}
-                        className="hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Add-ons</CardTitle>
-                  <Button type="button" onClick={addAddon}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Add-on
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {addons.map((addon, index) => (
-                  <div
-                    key={index}
-                    className="border rounded-lg p-4 space-y-4"
-                  >
+              {departureOptions.map((option, index) => (
+                <Card key={index}>
+                  <CardHeader>
                     <div className="flex justify-between items-center">
-                      <h4 className="font-semibold">Add-on {index + 1}</h4>
+                      <CardTitle>Departure Option {index + 1}</CardTitle>
                       <Button
                         type="button"
                         variant="destructive"
                         size="sm"
-                        onClick={() => removeAddon(index)}
+                        onClick={() => removeDepartureOption(index)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium">Name</label>
+                        <label className="text-sm font-medium">
+                          Departure Airport
+                        </label>
                         <Input
-                          value={addon.name}
+                          value={option.departureAirport}
                           onChange={(e) =>
-                            updateAddon(index, "name", e.target.value)
+                            updateDepartureOption(
+                              index,
+                              "departureAirport",
+                              e.target.value,
+                            )
                           }
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Price</label>
+                        <label className="text-sm font-medium">
+                          Arrival Airport
+                        </label>
+                        <Input
+                          value={option.arrivalAirport}
+                          onChange={(e) =>
+                            updateDepartureOption(
+                              index,
+                              "arrivalAirport",
+                              e.target.value,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Departure Date
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          value={
+                            option.departureDate instanceof Date
+                              ? option.departureDate.toISOString().slice(0, 16)
+                              : new Date(option.departureDate)
+                                  .toISOString()
+                                  .slice(0, 16)
+                          }
+                          onChange={(e) =>
+                            updateDepartureOption(
+                              index,
+                              "departureDate",
+                              new Date(e.target.value),
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Return Date
+                        </label>
+                        <Input
+                          type="datetime-local"
+                          value={
+                            option.returnDate instanceof Date
+                              ? option.returnDate.toISOString().slice(0, 16)
+                              : new Date(option.returnDate)
+                                  .toISOString()
+                                  .slice(0, 16)
+                          }
+                          onChange={(e) =>
+                            updateDepartureOption(
+                              index,
+                              "returnDate",
+                              new Date(e.target.value),
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Price Modifier (Optional)
+                        </label>
                         <Input
                           type="number"
                           step="0.01"
-                          value={addon.price}
+                          value={option.priceModifier || ""}
                           onChange={(e) =>
-                            updateAddon(index, "price", parseFloat(e.target.value))
+                            updateDepartureOption(
+                              index,
+                              "priceModifier",
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : null,
+                            )
                           }
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-medium">Currency *</label>
+                        <label className="text-sm font-medium">
+                          Currency *
+                        </label>
                         <Select
-                          value={addon.currency || DEFAULT_CURRENCY}
+                          value={option.currency || DEFAULT_CURRENCY}
                           onValueChange={(value) =>
-                            updateAddon(index, "currency", value)
+                            updateDepartureOption(index, "currency", value)
                           }
                         >
                           <SelectTrigger>
@@ -2311,121 +1967,767 @@ export function CharterPackageForm({
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="checkbox"
-                          checked={addon.isRequired}
-                          onChange={(e) =>
-                            updateAddon(index, "isRequired", e.target.checked)
-                          }
-                          className="h-4 w-4"
-                        />
-                        <label className="text-sm font-medium">Required</label>
-                      </div>
                     </div>
                     <div>
                       <label className="text-sm font-medium">
-                        Description (Optional)
+                        Flight Info (Optional)
                       </label>
                       <Textarea
-                        value={addon.description || ""}
+                        value={option.flightInfo || ""}
                         onChange={(e) =>
-                          updateAddon(
+                          updateDepartureOption(
                             index,
-                            "description",
-                            e.target.value || null
+                            "flightInfo",
+                            e.target.value || null,
                           )
                         }
                         rows={2}
                       />
                     </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">
+                        Hotel Pricing Configuration
+                      </label>
+                      <div className="border rounded-lg p-4 space-y-4">
+                        {hotelOptions.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No hotel options available. Please add hotel options
+                            first.
+                          </p>
+                        ) : (
+                          hotelOptions.map((hotelOpt, hotelIndex) => {
+                            const hotel = hotels.find(
+                              (h) => h.id === hotelOpt.hotelId,
+                            );
+                            const hotelOptIdentifier =
+                              hotelOpt.id || `temp_${hotelIndex}`;
+                            const hotelPricing = (
+                              option.hotelPricings || []
+                            ).find(
+                              (hp) => hp.hotelOptionId === hotelOptIdentifier,
+                            );
+                            const isSelected = !!hotelPricing;
+
+                            const addHotelPricing = () => {
+                              const currentPricings =
+                                option.hotelPricings || [];
+                              const newPricing = {
+                                hotelOptionId: hotelOptIdentifier,
+                                currency: DEFAULT_CURRENCY,
+                                roomTypePricings: [
+                                  {
+                                    roomType: "SINGLE" as const,
+                                    adultPrice: 0,
+                                    childPrice6to12: null,
+                                    childPrice2to6: null,
+                                    infantPrice: null,
+                                    currency: DEFAULT_CURRENCY,
+                                  },
+                                  {
+                                    roomType: "DOUBLE" as const,
+                                    adultPrice: 0,
+                                    childPrice6to12: null,
+                                    childPrice2to6: null,
+                                    infantPrice: null,
+                                    currency: DEFAULT_CURRENCY,
+                                  },
+                                ],
+                              };
+                              updateDepartureOption(index, "hotelPricings", [
+                                ...currentPricings,
+                                newPricing,
+                              ]);
+                            };
+
+                            const removeHotelPricing = () => {
+                              const currentPricings =
+                                option.hotelPricings || [];
+                              updateDepartureOption(
+                                index,
+                                "hotelPricings",
+                                currentPricings.filter(
+                                  (hp) =>
+                                    hp.hotelOptionId !== hotelOptIdentifier,
+                                ),
+                              );
+                            };
+
+                            const updateRoomTypePricing = (
+                              roomType: "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD",
+                              field: string,
+                              value: any,
+                            ) => {
+                              if (!hotelPricing) return;
+                              const updatedPricings = (
+                                option.hotelPricings || []
+                              ).map((hp) => {
+                                if (hp.hotelOptionId === hotelOptIdentifier) {
+                                  const updatedRoomTypes =
+                                    hp.roomTypePricings.map((rtp) =>
+                                      rtp.roomType === roomType
+                                        ? { ...rtp, [field]: value }
+                                        : rtp,
+                                    );
+                                  return {
+                                    ...hp,
+                                    roomTypePricings: updatedRoomTypes,
+                                  };
+                                }
+                                return hp;
+                              });
+                              updateDepartureOption(
+                                index,
+                                "hotelPricings",
+                                updatedPricings,
+                              );
+                            };
+
+                            const addRoomType = (
+                              roomType: "TRIPLE" | "QUAD",
+                            ) => {
+                              if (!hotelPricing) return;
+                              const updatedPricings = (
+                                option.hotelPricings || []
+                              ).map((hp) => {
+                                if (hp.hotelOptionId === hotelOptIdentifier) {
+                                  const newRoomType = {
+                                    roomType,
+                                    adultPrice: 0,
+                                    childPrice6to12: null,
+                                    childPrice2to6: null,
+                                    infantPrice: null,
+                                    currency: hp.currency || DEFAULT_CURRENCY,
+                                  };
+                                  return {
+                                    ...hp,
+                                    roomTypePricings: [
+                                      ...hp.roomTypePricings,
+                                      newRoomType,
+                                    ],
+                                  };
+                                }
+                                return hp;
+                              });
+                              updateDepartureOption(
+                                index,
+                                "hotelPricings",
+                                updatedPricings,
+                              );
+                            };
+
+                            return (
+                              <div
+                                key={hotelOpt.id || `temp_${hotelIndex}`}
+                                className="border rounded-lg p-4"
+                              >
+                                <div className="flex items-center justify-between mb-3">
+                                  <div className="flex items-center space-x-2">
+                                    <input
+                                      type="checkbox"
+                                      checked={isSelected}
+                                      onChange={(e) => {
+                                        if (e.target.checked) {
+                                          addHotelPricing();
+                                        } else {
+                                          removeHotelPricing();
+                                        }
+                                      }}
+                                      className="h-4 w-4"
+                                    />
+                                    <label className="text-sm font-medium cursor-pointer">
+                                      {hotel
+                                        ? `${hotel.name} (${hotel.city}, ${hotel.country})`
+                                        : `Hotel ID: ${hotelOpt.hotelId || "Not selected"}`}
+                                    </label>
+                                  </div>
+                                </div>
+                                {isSelected && hotelPricing && (
+                                  <div className="ml-6 space-y-4 mt-4">
+                                    <div>
+                                      <label className="text-xs font-medium">
+                                        Currency
+                                      </label>
+                                      <Select
+                                        value={
+                                          hotelPricing.currency ||
+                                          DEFAULT_CURRENCY
+                                        }
+                                        onValueChange={(value) => {
+                                          const updated = (
+                                            option.hotelPricings || []
+                                          ).map((hp) =>
+                                            hp.hotelOptionId ===
+                                            hotelOptIdentifier
+                                              ? { ...hp, currency: value }
+                                              : hp,
+                                          );
+                                          updateDepartureOption(
+                                            index,
+                                            "hotelPricings",
+                                            updated,
+                                          );
+                                        }}
+                                      >
+                                        <SelectTrigger className="mt-1">
+                                          <SelectValue placeholder="Select currency" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {SUPPORTED_CURRENCIES.map(
+                                            (currency) => (
+                                              <SelectItem
+                                                key={currency}
+                                                value={currency}
+                                              >
+                                                {currency}
+                                              </SelectItem>
+                                            ),
+                                          )}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                    {hotelPricing.roomTypePricings.map(
+                                      (rtp, rtpIndex) => (
+                                        <div
+                                          key={rtpIndex}
+                                          className="border rounded p-3 space-y-2"
+                                        >
+                                          <div className="font-semibold text-sm">
+                                            {rtp.roomType} Room
+                                          </div>
+                                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                            <div>
+                                              <label className="text-xs">
+                                                Adult Price
+                                              </label>
+                                              <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={rtp.adultPrice}
+                                                onChange={(e) =>
+                                                  updateRoomTypePricing(
+                                                    rtp.roomType,
+                                                    "adultPrice",
+                                                    parseFloat(
+                                                      e.target.value,
+                                                    ) || 0,
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-xs">
+                                                Child Price (6-12 Years)
+                                              </label>
+                                              <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={
+                                                  rtp.childPrice6to12 || ""
+                                                }
+                                                onChange={(e) =>
+                                                  updateRoomTypePricing(
+                                                    rtp.roomType,
+                                                    "childPrice6to12",
+                                                    e.target.value
+                                                      ? parseFloat(
+                                                          e.target.value,
+                                                        )
+                                                      : null,
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-xs">
+                                                Child Price (2-6 Years)
+                                              </label>
+                                              <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={rtp.childPrice2to6 || ""}
+                                                onChange={(e) =>
+                                                  updateRoomTypePricing(
+                                                    rtp.roomType,
+                                                    "childPrice2to6",
+                                                    e.target.value
+                                                      ? parseFloat(
+                                                          e.target.value,
+                                                        )
+                                                      : null,
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                            <div>
+                                              <label className="text-xs">
+                                                Infant Price (0-2 Years)
+                                              </label>
+                                              <Input
+                                                type="number"
+                                                step="0.01"
+                                                value={rtp.infantPrice || ""}
+                                                onChange={(e) =>
+                                                  updateRoomTypePricing(
+                                                    rtp.roomType,
+                                                    "infantPrice",
+                                                    e.target.value
+                                                      ? parseFloat(
+                                                          e.target.value,
+                                                        )
+                                                      : null,
+                                                  )
+                                                }
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ),
+                                    )}
+                                    <div className="flex gap-2">
+                                      {!hotelPricing.roomTypePricings.some(
+                                        (rtp) => rtp.roomType === "TRIPLE",
+                                      ) && (
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => addRoomType("TRIPLE")}
+                                        >
+                                          Add Triple Room
+                                        </Button>
+                                      )}
+                                      {!hotelPricing.roomTypePricings.some(
+                                        (rtp) => rtp.roomType === "QUAD",
+                                      ) && (
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => addRoomType("QUAD")}
+                                        >
+                                          Add Quad Room
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                      {(!option.hotelPricings ||
+                        option.hotelPricings.length === 0) && (
+                        <p className="text-sm text-destructive mt-1">
+                          At least one hotel with pricing must be configured
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </TabsContent>
           )}
 
           {!isInbound && (
-          <TabsContent value="other" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Excursion Program</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={excursionInput}
-                    onChange={(e) => setExcursionInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addExcursion();
-                      }
-                    }}
-                    placeholder="Add excursion location"
-                  />
-                  <Button type="button" onClick={addExcursion}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <ul className="list-disc list-inside space-y-1">
-                  {excursionProgram.map((location, index) => (
-                    <li key={index} className="flex items-center justify-between">
-                      <span>{location}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeExcursion(index)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <TabsContent value="hotels" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Hotel Options</h3>
+                <Button type="button" onClick={addHotelOption}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Hotel
+                </Button>
+              </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Required Documents</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    value={documentInput}
-                    onChange={(e) => setDocumentInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addDocument();
-                      }
-                    }}
-                    placeholder="Add required document"
-                  />
-                  <Button type="button" onClick={addDocument}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <ul className="list-disc list-inside space-y-1">
-                  {requiredDocuments.map((doc, index) => (
-                    <li key={index} className="flex items-center justify-between">
-                      <span>{doc}</span>
+              {hotelOptions.map((option, index) => (
+                <Card key={index}>
+                  <CardHeader>
+                    <div className="flex justify-between items-center">
+                      <CardTitle>Hotel Option {index + 1}</CardTitle>
                       <Button
                         type="button"
-                        variant="ghost"
+                        variant="destructive"
                         size="sm"
-                        onClick={() => removeDocument(index)}
+                        onClick={() => removeHotelOption(index)}
                       >
-                        <X className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                    </li>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Hotel</label>
+                      <Select
+                        value={option.hotelId || ""}
+                        onValueChange={(value) =>
+                          updateHotelOption(index, "hotelId", value)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a hotel" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {hotels.map((hotel) => (
+                            <SelectItem key={hotel.id} value={hotel.id}>
+                              {hotel.name} - {hotel.city}, {hotel.country}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">
+                          Star Rating (Optional)
+                        </label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="5"
+                          value={option.starRating || ""}
+                          onChange={(e) =>
+                            updateHotelOption(
+                              index,
+                              "starRating",
+                              e.target.value ? parseInt(e.target.value) : null,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Booking Rating (Optional)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="10"
+                          value={option.bookingRating || ""}
+                          onChange={(e) =>
+                            updateHotelOption(
+                              index,
+                              "bookingRating",
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : null,
+                            )
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Distance from Center (km, Optional)
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={option.distanceFromCenter || ""}
+                          onChange={(e) =>
+                            updateHotelOption(
+                              index,
+                              "distanceFromCenter",
+                              e.target.value
+                                ? parseFloat(e.target.value)
+                                : null,
+                            )
+                          }
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </TabsContent>
+          )}
+
+          {!isInbound && (
+            <TabsContent value="services" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Included Services</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={serviceInput}
+                      onChange={(e) => setServiceInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addService("included");
+                        }
+                      }}
+                      placeholder="Add included service"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => addService("included")}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {includedServices.map((service, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm"
+                      >
+                        <span>{service}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeService(index, "included")}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Excluded Services</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={serviceInput}
+                      onChange={(e) => setServiceInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addService("excluded");
+                        }
+                      }}
+                      placeholder="Add excluded service"
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => addService("excluded")}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {excludedServices.map((service, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center gap-2 bg-destructive/10 text-destructive px-3 py-1 rounded-full text-sm"
+                      >
+                        <span>{service}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeService(index, "excluded")}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <div className="flex justify-between items-center">
+                    <CardTitle>Add-ons</CardTitle>
+                    <Button type="button" onClick={addAddon}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Add-on
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {addons.map((addon, index) => (
+                    <div
+                      key={index}
+                      className="border rounded-lg p-4 space-y-4"
+                    >
+                      <div className="flex justify-between items-center">
+                        <h4 className="font-semibold">Add-on {index + 1}</h4>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => removeAddon(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Name</label>
+                          <Input
+                            value={addon.name}
+                            onChange={(e) =>
+                              updateAddon(index, "name", e.target.value)
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Price</label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={addon.price}
+                            onChange={(e) =>
+                              updateAddon(
+                                index,
+                                "price",
+                                parseFloat(e.target.value),
+                              )
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Currency *
+                          </label>
+                          <Select
+                            value={addon.currency || DEFAULT_CURRENCY}
+                            onValueChange={(value) =>
+                              updateAddon(index, "currency", value)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select currency" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {SUPPORTED_CURRENCIES.map((currency) => (
+                                <SelectItem key={currency} value={currency}>
+                                  {currency}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={addon.isRequired}
+                            onChange={(e) =>
+                              updateAddon(index, "isRequired", e.target.checked)
+                            }
+                            className="h-4 w-4"
+                          />
+                          <label className="text-sm font-medium">
+                            Required
+                          </label>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">
+                          Description (Optional)
+                        </label>
+                        <Textarea
+                          value={addon.description || ""}
+                          onChange={(e) =>
+                            updateAddon(
+                              index,
+                              "description",
+                              e.target.value || null,
+                            )
+                          }
+                          rows={2}
+                        />
+                      </div>
+                    </div>
                   ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {!isInbound && (
+            <TabsContent value="other" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Excursion Program</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={excursionInput}
+                      onChange={(e) => setExcursionInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addExcursion();
+                        }
+                      }}
+                      placeholder="Add excursion location"
+                    />
+                    <Button type="button" onClick={addExcursion}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1">
+                    {excursionProgram.map((location, index) => (
+                      <li
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
+                        <span>{location}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeExcursion(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Required Documents</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={documentInput}
+                      onChange={(e) => setDocumentInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addDocument();
+                        }
+                      }}
+                      placeholder="Add required document"
+                    />
+                    <Button type="button" onClick={addDocument}>
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1">
+                    {requiredDocuments.map((doc, index) => (
+                      <li
+                        key={index}
+                        className="flex items-center justify-between"
+                      >
+                        <span>{doc}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeDocument(index)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </TabsContent>
           )}
         </Tabs>
 
@@ -2434,8 +2736,8 @@ export function CharterPackageForm({
             {submitting
               ? "Saving..."
               : initialData
-              ? "Update Package"
-              : "Create Package"}
+                ? "Update Package"
+                : "Create Package"}
           </Button>
           <Button
             type="button"
@@ -2450,4 +2752,3 @@ export function CharterPackageForm({
     </Form>
   );
 }
-

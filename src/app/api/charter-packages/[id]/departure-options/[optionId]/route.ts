@@ -184,10 +184,14 @@ export async function DELETE(
 ) {
   try {
     await requireAdmin();
-    const { optionId } = await params;
-    await prisma.charterDepartureOption.delete({
-      where: { id: optionId },
-    });
+   const { id, optionId } = await params;
+
+await prisma.charterDepartureOption.delete({
+  where: {
+    id: optionId,
+    packageId: id,
+  },
+});
 
     return NextResponse.json({ success: true });
   } catch (error) {
