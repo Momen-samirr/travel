@@ -8,8 +8,8 @@ import { MapPin } from "lucide-react";
 interface Hotel {
   id: string;
   name: string;
-  latitude: number | null;
-  longitude: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
   address?: string | null;
   city: string;
   country: string;
@@ -21,7 +21,7 @@ interface HotelMapProps {
   hotels: Hotel[];
 }
 
-function extractIframeSrc(iframe: string | null): string | null {
+function extractIframeSrc(iframe?: string | null): string | null {
   if (!iframe) return null;
 
   const srcMatch = iframe.match(/src=["']([^"']+)["']/i);
@@ -33,6 +33,7 @@ function extractIframeSrc(iframe: string | null): string | null {
 
   return src.replaceAll("&amp;", "&");
 }
+
 export function HotelMap({ hotels }: HotelMapProps) {
   const searchParams = useSearchParams();
   const selectedHotelOptionId = searchParams.get("hotelOptionId");
@@ -43,10 +44,10 @@ export function HotelMap({ hotels }: HotelMapProps) {
   }, [hotels, selectedHotelOptionId]);
 
   const hotelWithMap = visibleHotels.find((hotel) =>
-    extractIframeSrc(hotel.googleMapsIframe),
+    Boolean(extractIframeSrc(hotel.googleMapsIframe)),
   );
 
-  const iframeSrc = extractIframeSrc(hotelWithMap?.googleMapsIframe || null);
+  const iframeSrc = extractIframeSrc(hotelWithMap?.googleMapsIframe);
 
   return (
     <Card>
@@ -81,8 +82,8 @@ export function HotelMap({ hotels }: HotelMapProps) {
             <div key={hotel.id} className="text-sm flex items-center gap-2">
               <MapPin className="h-4 w-4 text-primary" />
               <div>
-                <strong>{hotel.name}</strong> - {hotel.address}, {hotel.city},{" "}
-                {hotel.country}
+                <strong>{hotel.name}</strong> - {hotel.address || "No address"},{" "}
+                {hotel.city}, {hotel.country}
               </div>
             </div>
           ))}
