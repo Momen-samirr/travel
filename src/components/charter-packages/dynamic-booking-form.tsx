@@ -99,8 +99,12 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   const { toast } = useToast();
 
   const [hotelOptionId, setHotelOptionId] = useState<string | null>(null);
-  const [roomType, setRoomType] = useState<"SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD" | null>(null);
-  const [departureOptionId, setDepartureOptionId] = useState<string | null>(null);
+  const [roomType, setRoomType] = useState<
+    "SINGLE" | "DOUBLE" | "TRIPLE" | "QUAD" | null
+  >(null);
+  const [departureOptionId, setDepartureOptionId] = useState<string | null>(
+    null,
+  );
   const [numberOfAdults, setNumberOfAdults] = useState(1);
   const [numberOfChildren6to12, setNumberOfChildren6to12] = useState(0);
   const [numberOfChildren2to6, setNumberOfChildren2to6] = useState(0);
@@ -109,7 +113,9 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   const [preferredCurrency, setPreferredCurrency] =
     useState<SupportedCurrency>(DEFAULT_CURRENCY);
   const [submitting, setSubmitting] = useState(false);
-  const packageCurrency = normalizeCurrency(packageData.currency || DEFAULT_CURRENCY);
+  const packageCurrency = normalizeCurrency(
+    packageData.currency || DEFAULT_CURRENCY,
+  );
 
   // Fetch hotels based on selected departure
   const {
@@ -132,7 +138,9 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   useEffect(() => {
     const storedCurrency =
       typeof window !== "undefined"
-        ? (window.localStorage.getItem(CURRENCY_COOKIE_KEY) as SupportedCurrency | null)
+        ? (window.localStorage.getItem(
+            CURRENCY_COOKIE_KEY,
+          ) as SupportedCurrency | null)
         : null;
     if (storedCurrency && SUPPORTED_CURRENCIES.includes(storedCurrency)) {
       setPreferredCurrency(storedCurrency);
@@ -152,10 +160,12 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
     setRoomType(null);
   }, [hotelOptionId]);
 
-    // Use available hotels from hook if departure is selected, otherwise use all hotels
-    const hotelsToUse = departureOptionId ? availableHotels : packageData.hotelOptions;
+  // Use available hotels from hook if departure is selected, otherwise use all hotels
+  const hotelsToUse = departureOptionId
+    ? availableHotels
+    : packageData.hotelOptions;
 
-    const pricing = useCharterPackagePricing(
+  const pricing = useCharterPackagePricing(
     {
       basePrice: packageData.basePrice,
       priceRangeMin: packageData.priceRangeMin,
@@ -187,11 +197,11 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
       numberOfChildren2to6,
       numberOfInfants,
       selectedAddonIds,
-    }
+    },
   );
 
   const selectedAddons = packageData.addons.filter((addon) =>
-    selectedAddonIds.includes(addon.id)
+    selectedAddonIds.includes(addon.id),
   );
 
   const handleAddonToggle = (addonId: string, isRequired: boolean) => {
@@ -199,7 +209,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
     setSelectedAddonIds((prev) =>
       prev.includes(addonId)
         ? prev.filter((id) => id !== addonId)
-        : [...prev, addonId]
+        : [...prev, addonId],
     );
   };
 
@@ -258,13 +268,20 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
           numberOfChildren2to6,
           numberOfInfants,
           selectedAddonIds,
-          numberOfGuests: numberOfAdults + numberOfChildren6to12 + numberOfChildren2to6 + numberOfInfants,
+          numberOfGuests:
+            numberOfAdults +
+            numberOfChildren6to12 +
+            numberOfChildren2to6 +
+            numberOfInfants,
           preferredCurrency,
           guestDetails: {
             firstName: user.firstName || "",
             lastName: user.lastName || "",
             email: user.emailAddresses[0]?.emailAddress || "",
-            phone: user.phoneNumbers[0]?.phoneNumber || user.emailAddresses[0]?.emailAddress || "N/A",
+            phone:
+              user.phoneNumbers[0]?.phoneNumber ||
+              user.emailAddresses[0]?.emailAddress ||
+              "N/A",
           },
         }),
       });
@@ -321,10 +338,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   }
 
   const canBook =
-    hotelOptionId &&
-    roomType &&
-    departureOptionId &&
-    numberOfAdults >= 1;
+    hotelOptionId && roomType && departureOptionId && numberOfAdults >= 1;
 
   return (
     <div className="space-y-4">
@@ -339,85 +353,87 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
 
       {packageData.departureOptions.length > 0 && (
         <>
-        <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Preferred Currency</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select
-            value={preferredCurrency}
-            onValueChange={(value) => {
-              const selected = value as SupportedCurrency;
-              setPreferredCurrency(selected);
-              if (typeof window !== "undefined") {
-                window.localStorage.setItem(CURRENCY_COOKIE_KEY, selected);
-                document.cookie = `${CURRENCY_COOKIE_KEY}=${selected}; path=/; max-age=31536000; samesite=lax`;
-              }
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select preferred currency" />
-            </SelectTrigger>
-            <SelectContent>
-              {SUPPORTED_CURRENCIES.map((currency) => (
-                <SelectItem key={currency} value={currency}>
-                  {currency}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="mt-2 text-xs text-muted-foreground">
-            Final amount is settled in the selected currency during booking.
-          </p>
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Preferred Currency</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={preferredCurrency}
+                onValueChange={(value) => {
+                  const selected = value as SupportedCurrency;
+                  setPreferredCurrency(selected);
+                  if (typeof window !== "undefined") {
+                    window.localStorage.setItem(CURRENCY_COOKIE_KEY, selected);
+                    document.cookie = `${CURRENCY_COOKIE_KEY}=${selected}; path=/; max-age=31536000; samesite=lax`;
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select preferred currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUPPORTED_CURRENCIES.map((currency) => (
+                    <SelectItem key={currency} value={currency}>
+                      {currency}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Final amount is settled in the selected currency during booking.
+              </p>
+            </CardContent>
+          </Card>
 
-      <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <Plane className="h-5 w-5" />
-              Select Departure
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RadioGroup
-              value={departureOptionId || ""}
-              onValueChange={setDepartureOptionId}
-            >
-              <div className="space-y-3">
-                {packageData.departureOptions.map((option) => (
-                  <div
-                    key={option.id}
-                    className="flex items-start space-x-3 border rounded-lg p-3 hover:bg-muted/50 cursor-pointer"
-                  >
-                    <RadioGroupItem value={option.id} id={option.id} />
-                    <Label
-                      htmlFor={option.id}
-                      className="flex-1 cursor-pointer space-y-1"
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Plane className="h-5 w-5" />
+                Select Departure
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <RadioGroup
+                value={departureOptionId || ""}
+                onValueChange={setDepartureOptionId}
+              >
+                <div className="space-y-3">
+                  {packageData.departureOptions.map((option) => (
+                    <div
+                      key={option.id}
+                      className="flex items-start space-x-3 border rounded-lg p-3 hover:bg-muted/50 cursor-pointer"
                     >
-                      <div className="font-semibold">
-                        {option.departureAirport} → {option.arrivalAirport}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDate(option.departureDate)} -{" "}
-                        {formatDate(option.returnDate)}
-                      </div>
-                      {option.priceModifier && (
-                        <div className="text-sm font-medium">
-                          {Number(option.priceModifier) > 0 ? "+" : ""}
-                          {formatCurrency(
-                            Number(option.priceModifier),
-                            normalizeCurrency(option.currency || packageCurrency)
-                          )}
+                      <RadioGroupItem value={option.id} id={option.id} />
+                      <Label
+                        htmlFor={option.id}
+                        className="flex-1 cursor-pointer space-y-1"
+                      >
+                        <div className="font-semibold">
+                          {option.departureAirport} → {option.arrivalAirport}
                         </div>
-                      )}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </RadioGroup>
-          </CardContent>
-        </Card>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(option.departureDate)} -{" "}
+                          {formatDate(option.returnDate)}
+                        </div>
+                        {option.priceModifier && (
+                          <div className="text-sm font-medium">
+                            {Number(option.priceModifier) > 0 ? "+" : ""}
+                            {formatCurrency(
+                              Number(option.priceModifier),
+                              normalizeCurrency(
+                                option.currency || packageCurrency,
+                              ),
+                            )}
+                          </div>
+                        )}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </RadioGroup>
+            </CardContent>
+          </Card>
         </>
       )}
 
@@ -455,7 +471,16 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
             ) : (
               <RadioGroup
                 value={hotelOptionId || ""}
-                onValueChange={setHotelOptionId}
+                onValueChange={(value) => {
+                  setHotelOptionId(value);
+
+                  const params = new URLSearchParams(searchParams.toString());
+                  params.set("hotelOptionId", value);
+
+                  router.replace(`${pathname}?${params.toString()}`, {
+                    scroll: false,
+                  });
+                }}
               >
                 <div className="space-y-3">
                   {availableHotels.map((option: any) => (
@@ -468,9 +493,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                         htmlFor={option.id}
                         className="flex-1 cursor-pointer space-y-1"
                       >
-                        <div className="font-semibold">
-                          {option.hotel.name}
-                        </div>
+                        <div className="font-semibold">{option.hotel.name}</div>
                         <div className="text-sm text-muted-foreground">
                           {option.hotel.city}, {option.hotel.country}
                         </div>
@@ -536,13 +559,23 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                         key={rtp.roomType}
                         className="flex items-center space-x-3 border rounded-lg p-3 hover:bg-muted/50 cursor-pointer"
                       >
-                        <RadioGroupItem value={rtp.roomType} id={rtp.roomType.toLowerCase()} />
-                        <Label htmlFor={rtp.roomType.toLowerCase()} className="flex-1 cursor-pointer">
-                          <div className="font-semibold">{roomTypeLabels[rtp.roomType] || rtp.roomType}</div>
+                        <RadioGroupItem
+                          value={rtp.roomType}
+                          id={rtp.roomType.toLowerCase()}
+                        />
+                        <Label
+                          htmlFor={rtp.roomType.toLowerCase()}
+                          className="flex-1 cursor-pointer"
+                        >
+                          <div className="font-semibold">
+                            {roomTypeLabels[rtp.roomType] || rtp.roomType}
+                          </div>
                           <div className="text-sm text-muted-foreground">
                             {formatCurrency(
                               Number(rtp.adultPrice),
-                              normalizeCurrency(rtp.currency || packageCurrency)
+                              normalizeCurrency(
+                                rtp.currency || packageCurrency,
+                              ),
                             )}
                           </div>
                         </Label>
@@ -584,7 +617,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
               value={numberOfChildren6to12}
               onChange={(e) =>
                 setNumberOfChildren6to12(
-                  Math.max(0, parseInt(e.target.value) || 0)
+                  Math.max(0, parseInt(e.target.value) || 0),
                 )
               }
             />
@@ -598,7 +631,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
               value={numberOfChildren2to6}
               onChange={(e) =>
                 setNumberOfChildren2to6(
-                  Math.max(0, parseInt(e.target.value) || 0)
+                  Math.max(0, parseInt(e.target.value) || 0),
                 )
               }
             />
@@ -650,7 +683,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
                       <div className="font-semibold">
                         {formatCurrency(
                           Number(addon.price),
-                          normalizeCurrency(addon.currency || packageCurrency)
+                          normalizeCurrency(addon.currency || packageCurrency),
                         )}
                       </div>
                     </div>
@@ -702,4 +735,3 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
     </div>
   );
 }
-

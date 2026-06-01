@@ -123,8 +123,8 @@ model Tour {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  bookings Booking[]
-  reviews  Review[]
+  bookings       Booking[]
+  reviews        Review[]
   priceOverrides TourPriceOverride[]
 
   @@index([slug])
@@ -157,24 +157,25 @@ model Flight {
 }
 
 model Hotel {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  description  String   @db.Text
-  address      String
-  city         String
-  country      String
-  latitude     Float?
-  longitude    Float?
-  placeId      String?
-  rating       Float?
-  amenities    Json
-  images       Json
-  checkInTime  String?
-  checkOutTime String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(cuid())
+  name             String
+  slug             String   @unique
+  description      String   @db.Text
+  address          String
+  city             String
+  country          String
+  latitude         Float?
+  longitude        Float?
+  placeId          String?
+  googleMapsIframe String?  @db.Text
+  rating           Float?
+  amenities        Json
+  images           Json
+  checkInTime      String?
+  checkOutTime     String?
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   bookings              Booking[]
   reviews               Review[]
@@ -242,8 +243,8 @@ model Booking {
   amadeusOrderId           String?
   pnr                      String?
   amadeusStatus            String?
-  amadeusError             String?                   @db.Text
-  amadeusRetryCount        Int                       @default(0)
+  amadeusError             String?        @db.Text
+  amadeusRetryCount        Int            @default(0)
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 
@@ -448,14 +449,14 @@ model CharterTravelPackage {
 }
 
 model CharterPackagePriceOverride {
-  id           String               @id @default(cuid())
-  packageId    String
-  currency     String
-  basePrice    Decimal?             @db.Decimal(10, 2)
-  priceRangeMin Decimal?            @db.Decimal(10, 2)
-  priceRangeMax Decimal?            @db.Decimal(10, 2)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  id            String   @id @default(cuid())
+  packageId     String
+  currency      String
+  basePrice     Decimal? @db.Decimal(10, 2)
+  priceRangeMin Decimal? @db.Decimal(10, 2)
+  priceRangeMax Decimal? @db.Decimal(10, 2)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   package CharterTravelPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
@@ -464,7 +465,7 @@ model CharterPackagePriceOverride {
 }
 
 model TourPriceOverride {
-  id           String   @id @default(cuid())
+  id            String   @id @default(cuid())
   tourId        String
   currency      String
   price         Decimal? @db.Decimal(10, 2)
@@ -595,24 +596,24 @@ model RoomTypePricing {
 }
 
 model Branch {
-  id          String   @id @default(cuid())
-  name        String   // e.g., "Cairo Main Office", "Alexandria Branch"
-  slug        String   @unique // URL-friendly identifier
-  address     String   @db.Text // Full address
-  city        String
-  country     String
-  latitude    Float?
-  longitude   Float?
-  placeId     String?  // Google Places ID
-  phone       String   // Primary phone number
-  phoneAlt    String?  // Alternative phone number
-  email       String   // Primary email
-  emailAlt    String?  // Alternative email
-  workingHours Json    // { monday: "9:00 AM - 5:00 PM", tuesday: "9:00 AM - 5:00 PM", ... }
-  isActive    Boolean  @default(true)
-  displayOrder Int     @default(0) // For ordering branches
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  name         String // e.g., "Cairo Main Office", "Alexandria Branch"
+  slug         String   @unique // URL-friendly identifier
+  address      String   @db.Text // Full address
+  city         String
+  country      String
+  latitude     Float?
+  longitude    Float?
+  placeId      String? // Google Places ID
+  phone        String // Primary phone number
+  phoneAlt     String? // Alternative phone number
+  email        String // Primary email
+  emailAlt     String? // Alternative email
+  workingHours Json // { monday: "9:00 AM - 5:00 PM", tuesday: "9:00 AM - 5:00 PM", ... }
+  isActive     Boolean  @default(true)
+  displayOrder Int      @default(0) // For ordering branches
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   @@index([isActive])
   @@index([displayOrder])

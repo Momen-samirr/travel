@@ -4,7 +4,16 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { MapPin, Calendar, Hotel, Plane, Check, X, Package, FileText } from "lucide-react";
+import {
+  MapPin,
+  Calendar,
+  Hotel,
+  Plane,
+  Check,
+  X,
+  Package,
+  FileText,
+} from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
@@ -43,7 +52,7 @@ export default async function CharterPackageDetailPage({
   const { slug: rawSlug } = await params;
   // Decode URL-encoded slug and normalize
   const slug = decodeURIComponent(rawSlug).trim();
-  
+
   // Try to find package by slug (exact match first)
   let pkg = await prisma.charterTravelPackage.findUnique({
     where: { slug, type: PackageType.CHARTER },
@@ -81,7 +90,7 @@ export default async function CharterPackageDetailPage({
   if (!pkg) {
     const normalizedSlug = slug.replace(/\s+/g, "-").toLowerCase();
     pkg = await prisma.charterTravelPackage.findFirst({
-      where: { 
+      where: {
         slug: normalizedSlug,
         type: PackageType.CHARTER,
         isActive: true,
@@ -139,8 +148,8 @@ export default async function CharterPackageDetailPage({
     pkg.priceRangeMin && pkg.priceRangeMax
       ? `${formatCurrency(Number(pkg.priceRangeMin), packageCurrency)} - ${formatCurrency(Number(pkg.priceRangeMax), packageCurrency)}`
       : pkg.basePrice
-      ? formatCurrency(Number(pkg.basePrice), packageCurrency)
-      : "Contact for pricing";
+        ? formatCurrency(Number(pkg.basePrice), packageCurrency)
+        : "Contact for pricing";
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -214,7 +223,9 @@ export default async function CharterPackageDetailPage({
                             {Number(option.priceModifier) > 0 ? "+" : ""}
                             {formatCurrency(
                               Number(option.priceModifier),
-                              normalizeCurrency(option.currency || packageCurrency)
+                              normalizeCurrency(
+                                option.currency || packageCurrency,
+                              ),
                             )}
                           </Badge>
                         )}
@@ -278,14 +289,12 @@ export default async function CharterPackageDetailPage({
           {pkg.hotelOptions.length > 0 && (
             <HotelMap
               hotels={pkg.hotelOptions.map((option) => ({
-                id: option.hotel.id,
+                id: option.id,
                 name: option.hotel.name,
                 address: option.hotel.address,
                 city: option.hotel.city,
                 country: option.hotel.country,
-                latitude: option.hotel.latitude,
-                longitude: option.hotel.longitude,
-                placeId: option.hotel.placeId,
+                googleMapsIframe: option.hotel.googleMapsIframe,
               }))}
             />
           )}
@@ -356,7 +365,9 @@ export default async function CharterPackageDetailPage({
                         <span className="font-semibold">
                           {formatCurrency(
                             Number(addon.price),
-                            normalizeCurrency(addon.currency || packageCurrency)
+                            normalizeCurrency(
+                              addon.currency || packageCurrency,
+                            ),
                           )}
                         </span>
                       </div>
@@ -445,8 +456,12 @@ export default async function CharterPackageDetailPage({
                 packageData={{
                   id: pkg.id,
                   basePrice: pkg.basePrice ? Number(pkg.basePrice) : null,
-                  priceRangeMin: pkg.priceRangeMin ? Number(pkg.priceRangeMin) : null,
-                  priceRangeMax: pkg.priceRangeMax ? Number(pkg.priceRangeMax) : null,
+                  priceRangeMin: pkg.priceRangeMin
+                    ? Number(pkg.priceRangeMin)
+                    : null,
+                  priceRangeMax: pkg.priceRangeMax
+                    ? Number(pkg.priceRangeMax)
+                    : null,
                   currency: packageCurrency,
                   discount: pkg.discount ? Number(pkg.discount) : null,
                   hotelOptions: pkg.hotelOptions.map((opt) => ({
@@ -472,9 +487,15 @@ export default async function CharterPackageDetailPage({
                   })),
                   priceOverrides: pkg.priceOverrides.map((override) => ({
                     ...override,
-                    basePrice: override.basePrice ? Number(override.basePrice) : null,
-                    priceRangeMin: override.priceRangeMin ? Number(override.priceRangeMin) : null,
-                    priceRangeMax: override.priceRangeMax ? Number(override.priceRangeMax) : null,
+                    basePrice: override.basePrice
+                      ? Number(override.basePrice)
+                      : null,
+                    priceRangeMin: override.priceRangeMin
+                      ? Number(override.priceRangeMin)
+                      : null,
+                    priceRangeMax: override.priceRangeMax
+                      ? Number(override.priceRangeMax)
+                      : null,
                   })),
                 }}
               />
@@ -485,4 +506,3 @@ export default async function CharterPackageDetailPage({
     </div>
   );
 }
-

@@ -19,7 +19,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Upload, X, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { GoogleMapsPicker } from "./google-maps-picker";
 
 interface HotelFormProps {
   initialData?: HotelInput & { id?: string };
@@ -29,7 +28,9 @@ export function HotelForm({ initialData }: HotelFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const [images, setImages] = useState<string[]>(initialData?.images || []);
-  const [amenities, setAmenities] = useState<string[]>(initialData?.amenities || []);
+  const [amenities, setAmenities] = useState<string[]>(
+    initialData?.amenities || [],
+  );
   const [amenityInput, setAmenityInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +55,7 @@ export function HotelForm({ initialData }: HotelFormProps) {
           latitude: initialData.latitude ?? null,
           longitude: initialData.longitude ?? null,
           placeId: (initialData as any)?.placeId ?? null,
+          googleMapsIframe: initialData.googleMapsIframe ?? "",
           rating: initialData.rating ?? null,
           amenities: initialData.amenities || [],
           images: initialData.images,
@@ -68,6 +70,7 @@ export function HotelForm({ initialData }: HotelFormProps) {
           latitude: null,
           longitude: null,
           placeId: null,
+          googleMapsIframe: "",
           rating: null,
           amenities: [],
           images: [],
@@ -158,6 +161,7 @@ export function HotelForm({ initialData }: HotelFormProps) {
       const payload = {
         ...data,
         placeId: locationData.placeId,
+        googleMapsIframe: data.googleMapsIframe || null,
         images,
         amenities,
       };
@@ -226,7 +230,7 @@ export function HotelForm({ initialData }: HotelFormProps) {
                     value={field.value || ""}
                     onChange={(e) =>
                       field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : null
+                        e.target.value ? parseFloat(e.target.value) : null,
                       )
                     }
                   />
@@ -292,8 +296,25 @@ export function HotelForm({ initialData }: HotelFormProps) {
             </FormItem>
           )}
         />
-
-        <GoogleMapsPicker
+        <FormField
+          control={form.control}
+          name="googleMapsIframe"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Google Maps Iframe</FormLabel>
+              <FormControl>
+                <Textarea
+                  {...field}
+                  value={field.value || ""}
+                  rows={5}
+                  placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {/* <GoogleMapsPicker
           latitude={locationData.latitude}
           longitude={locationData.longitude}
           placeId={locationData.placeId}
@@ -301,7 +322,7 @@ export function HotelForm({ initialData }: HotelFormProps) {
           city={locationData.city}
           country={locationData.country}
           onLocationChange={handleLocationChange}
-        />
+        /> */}
 
         <Card>
           <CardHeader>
@@ -409,8 +430,8 @@ export function HotelForm({ initialData }: HotelFormProps) {
             {submitting
               ? "Saving..."
               : initialData
-              ? "Update Hotel"
-              : "Create Hotel"}
+                ? "Update Hotel"
+                : "Create Hotel"}
           </Button>
           <Button
             type="button"

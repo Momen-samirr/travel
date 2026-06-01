@@ -51,13 +51,14 @@ export async function POST(request: NextRequest) {
     }
 
     const hotel = await prisma.hotel.create({
-      data: {
-        ...data,
-        slug,
-        placeId: (data as any).placeId || null,
-        amenities: data.amenities as any,
-        images: data.images as any,
-      },
+   data: {
+  ...data,
+  slug,
+  placeId: (data as any).placeId || null,
+  googleMapsIframe: data.googleMapsIframe || null,
+  amenities: data.amenities as any,
+  images: data.images as any,
+},
     });
 
     await logActivity({

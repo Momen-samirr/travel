@@ -43,12 +43,13 @@ export async function PUT(
 
     const hotel = await prisma.hotel.update({
       where: { id },
-      data: {
-        ...data,
-        placeId: (data as any).placeId || null,
-        amenities: data.amenities as any,
-        images: data.images as any,
-      },
+   data: {
+  ...data,
+  placeId: (data as any).placeId || null,
+  googleMapsIframe: data.googleMapsIframe || null,
+  amenities: data.amenities as any,
+  images: data.images as any,
+},
     });
 
     await logActivity({

@@ -25,7 +25,7 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
       "img-src 'self' data: https: https://*.googleapis.com https://*.gstatic.com",
       "font-src 'self' data: https://fonts.gstatic.com https://*.clerk.com https://*.clerk.accounts.dev",
       "connect-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://*.paymob.com https://*.googleapis.com https://*.gstatic.com",
-      "frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev",
+"frame-src 'self' https://*.clerk.com https://*.clerk.accounts.dev https://www.google.com https://maps.google.com",
       "worker-src 'self' blob:",
     ].join("; ")
   );

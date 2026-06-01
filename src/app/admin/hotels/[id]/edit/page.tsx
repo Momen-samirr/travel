@@ -28,7 +28,11 @@ export default async function EditHotelPage({
     notFound();
   }
 
-  const initialData: HotelInput & { id?: string; placeId?: string | null } = {
+  const initialData: HotelInput & {
+    id?: string;
+    placeId?: string | null;
+    googleMapsIframe?: string | null;
+  } = {
     id: hotel.id,
     name: hotel.name,
     description: hotel.description || "",
@@ -38,6 +42,8 @@ export default async function EditHotelPage({
     latitude: hotel.latitude ?? null,
     longitude: hotel.longitude ?? null,
     placeId: hotel.placeId ?? null,
+    googleMapsIframe: hotel.googleMapsIframe ?? "",
+
     rating: hotel.rating ?? null,
     amenities: (hotel.amenities as string[]) || [],
     images: hotel.images as string[],
@@ -54,4 +60,3 @@ export default async function EditHotelPage({
     </div>
   );
 }
-
