@@ -96,6 +96,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user, isSignedIn, isLoaded } = useUser();
+  const [guestPhone, setGuestPhone] = useState("");
   const { toast } = useToast();
 
   const [hotelOptionId, setHotelOptionId] = useState<string | null>(null);
@@ -217,6 +218,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
     if (!hotelOptionId) return "Please select a hotel option";
     if (!roomType) return "Please select a room type";
     if (!departureOptionId) return "Please select a departure option";
+    if (!guestPhone.trim()) return "Please enter your phone number";
     if (numberOfAdults < 1) return "At least one adult is required";
     return null;
   };
@@ -278,10 +280,7 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
             firstName: user.firstName || "",
             lastName: user.lastName || "",
             email: user.emailAddresses[0]?.emailAddress || "",
-            phone:
-              user.phoneNumbers[0]?.phoneNumber ||
-              user.emailAddresses[0]?.emailAddress ||
-              "N/A",
+            phone: guestPhone.trim(),
           },
         }),
       });
@@ -596,6 +595,17 @@ export function DynamicBookingForm({ packageData }: DynamicBookingFormProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="guestPhone">Phone Number</Label>
+            <Input
+              id="guestPhone"
+              type="tel"
+              value={guestPhone}
+              onChange={(e) => setGuestPhone(e.target.value)}
+              placeholder="+20..."
+              required
+            />
+          </div>
           <div className="space-y-2">
             <Label htmlFor="adults">Adults</Label>
             <Input

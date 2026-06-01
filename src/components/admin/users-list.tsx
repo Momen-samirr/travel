@@ -121,10 +121,13 @@ export function UsersList({
             />
           </div>
         </div>
-        <Select value={role} onValueChange={(value) => {
-          setRole(value);
-          handleFilterChange();
-        }}>
+        <Select
+          value={role}
+          onValueChange={(value) => {
+            setRole(value);
+            handleFilterChange();
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Roles" />
           </SelectTrigger>
@@ -135,10 +138,13 @@ export function UsersList({
             <SelectItem value="SUPER_ADMIN">Super Admin</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={isActive} onValueChange={(value) => {
-          setIsActive(value);
-          handleFilterChange();
-        }}>
+        <Select
+          value={isActive}
+          onValueChange={(value) => {
+            setIsActive(value);
+            handleFilterChange();
+          }}
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
@@ -164,6 +170,7 @@ export function UsersList({
             <TableRow>
               <TableHead>Email</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Phone</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Bookings</TableHead>
@@ -175,7 +182,10 @@ export function UsersList({
           <TableBody>
             {initialUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell
+                  colSpan={9}
+                  className="text-center py-8 text-muted-foreground"
+                >
                   No users found
                 </TableCell>
               </TableRow>
@@ -184,6 +194,7 @@ export function UsersList({
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.email}</TableCell>
                   <TableCell>{user.name || "-"}</TableCell>
+                  <TableCell>{user.phone || "-"}</TableCell>
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(user.role)}>
                       {user.role}
@@ -208,10 +219,14 @@ export function UsersList({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/users/${user.id}`}>View Details</Link>
+                          <Link href={`/admin/users/${user.id}`}>
+                            View Details
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/admin/users/${user.id}/edit`}>Edit</Link>
+                          <Link href={`/admin/users/${user.id}/edit`}>
+                            Edit
+                          </Link>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -227,7 +242,8 @@ export function UsersList({
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
           <div className="text-sm text-muted-foreground">
-            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)} of {total} users
+            Showing {(page - 1) * limit + 1} to {Math.min(page * limit, total)}{" "}
+            of {total} users
           </div>
           <div className="flex gap-2">
             <Button
@@ -250,4 +266,3 @@ export function UsersList({
     </div>
   );
 }
-

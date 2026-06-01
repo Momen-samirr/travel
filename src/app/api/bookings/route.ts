@@ -469,7 +469,14 @@ export async function POST(request: NextRequest) {
         ? `Pickup location: ${data.pickupLocation}`
         : undefined,
     };
+const guestPhone = data.guestDetails?.phone;
 
+if (guestPhone) {
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { phone: guestPhone },
+  });
+}
     const booking = await prisma.booking.create({
       data: {
         userId: user.id,
