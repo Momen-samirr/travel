@@ -3,7 +3,15 @@ import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Star, Calendar, Users, Wifi, Car, UtensilsCrossed } from "lucide-react";
+import {
+  MapPin,
+  Star,
+  Calendar,
+  Users,
+  Wifi,
+  Car,
+  UtensilsCrossed,
+} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { HotelMap } from "@/components/charter-packages/hotel-map";
 import { AmadeusHotelService } from "@/services/hotels/amadeusHotelService";
@@ -18,7 +26,12 @@ export default async function AmadeusHotelDetailPage({
   searchParams,
 }: {
   params: Promise<{ hotelId: string }>;
-  searchParams: Promise<{ checkInDate?: string; checkOutDate?: string; adults?: string; children?: string }>;
+  searchParams: Promise<{
+    checkInDate?: string;
+    checkOutDate?: string;
+    adults?: string;
+    children?: string;
+  }>;
 }) {
   const { hotelId } = await params;
   const queryParams = await searchParams;
@@ -30,7 +43,9 @@ export default async function AmadeusHotelDetailPage({
       checkInDate: queryParams.checkInDate || undefined,
       checkOutDate: queryParams.checkOutDate || undefined,
       adults: queryParams.adults ? parseInt(queryParams.adults) : 1,
-      children: queryParams.children ? parseInt(queryParams.children) : undefined,
+      children: queryParams.children
+        ? parseInt(queryParams.children)
+        : undefined,
       currencyCode: "EGP",
     });
 
@@ -43,7 +58,8 @@ export default async function AmadeusHotelDetailPage({
     let offers: any[] = [];
     if (queryParams.checkInDate && queryParams.checkOutDate) {
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+        const baseUrl =
+          process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
         const offersParams = new URLSearchParams({
           hotelId,
           checkInDate: queryParams.checkInDate,
@@ -57,12 +73,12 @@ export default async function AmadeusHotelDetailPage({
 
         const offersResponse = await fetch(
           `${baseUrl}/api/amadeus/hotels/offers?${offersParams.toString()}`,
-          { 
+          {
             cache: "no-store",
             headers: {
               "Content-Type": "application/json",
             },
-          }
+          },
         );
 
         if (offersResponse.ok) {
@@ -97,8 +113,10 @@ export default async function AmadeusHotelDetailPage({
                   const parent = target.parentElement;
                   if (parent && !parent.querySelector(".image-placeholder")) {
                     const placeholder = document.createElement("div");
-                    placeholder.className = "image-placeholder absolute inset-0 bg-muted flex items-center justify-center";
-                    placeholder.innerHTML = '<span class="text-muted-foreground">No Image</span>';
+                    placeholder.className =
+                      "image-placeholder absolute inset-0 bg-muted flex items-center justify-center";
+                    placeholder.innerHTML =
+                      '<span class="text-muted-foreground">No Image</span>';
                     parent.appendChild(placeholder);
                   }
                 }}
@@ -119,7 +137,9 @@ export default async function AmadeusHotelDetailPage({
               <div className="flex items-center gap-4 text-lg text-white/90">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  <span>{hotel.city}, {hotel.country}</span>
+                  <span>
+                    {hotel.city}, {hotel.country}
+                  </span>
                 </div>
                 {hotel.rating && (
                   <div className="flex items-center gap-2">
@@ -177,28 +197,33 @@ export default async function AmadeusHotelDetailPage({
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {hotel.images.slice(1, 7).map((image: string, index: number) => (
-                        <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
-                          <Image
-                            src={image}
-                            alt={`${hotel.name} ${index + 2}`}
-                            fill
-                            className="object-cover"
-                            onError={(e) => {
-                              // Prevent infinite loop by hiding image
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = "none";
-                            }}
-                          />
-                        </div>
-                      ))}
+                      {hotel.images
+                        .slice(1, 7)
+                        .map((image: string, index: number) => (
+                          <div
+                            key={index}
+                            className="relative aspect-square rounded-lg overflow-hidden"
+                          >
+                            <Image
+                              src={image}
+                              alt={`${hotel.name} ${index + 2}`}
+                              fill
+                              className="object-cover"
+                              onError={(e) => {
+                                // Prevent infinite loop by hiding image
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                              }}
+                            />
+                          </div>
+                        ))}
                     </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Location Map */}
-              {hotel.latitude && hotel.longitude && (
+              {hotel.latitude != null && hotel.longitude != null && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Location</CardTitle>
@@ -244,7 +269,9 @@ export default async function AmadeusHotelDetailPage({
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-semibold">{offer.room?.type || "Standard Room"}</p>
+                            <p className="font-semibold">
+                              {offer.room?.type || "Standard Room"}
+                            </p>
                             {offer.room?.description && (
                               <p className="text-sm text-muted-foreground">
                                 {offer.room.description.text}
@@ -255,16 +282,19 @@ export default async function AmadeusHotelDetailPage({
                             <p className="text-2xl font-bold text-primary">
                               {formatCurrency(
                                 parseFloat(offer.price?.total || "0"),
-                                offer.price?.currency || "EGP"
+                                offer.price?.currency || "EGP",
                               )}
                             </p>
-                            <p className="text-xs text-muted-foreground">per night</p>
+                            <p className="text-xs text-muted-foreground">
+                              per night
+                            </p>
                           </div>
                         </div>
                         {offer.cancellationPolicies && (
                           <div className="text-xs text-muted-foreground">
                             <p>
-                              Cancellation: {offer.cancellationPolicies[0]?.type || "Varies"}
+                              Cancellation:{" "}
+                              {offer.cancellationPolicies[0]?.type || "Varies"}
                             </p>
                           </div>
                         )}
@@ -280,7 +310,9 @@ export default async function AmadeusHotelDetailPage({
                         Select dates to view pricing
                       </p>
                       <Button asChild variant="outline" className="w-full">
-                        <a href={`/hotels/amadeus/${hotelId}?checkInDate=${queryParams.checkInDate || ""}&checkOutDate=${queryParams.checkOutDate || ""}`}>
+                        <a
+                          href={`/hotels/amadeus/${hotelId}?checkInDate=${queryParams.checkInDate || ""}&checkOutDate=${queryParams.checkOutDate || ""}`}
+                        >
                           Select Dates
                         </a>
                       </Button>
@@ -289,9 +321,12 @@ export default async function AmadeusHotelDetailPage({
 
                   {hotel.priceRange && (
                     <div className="pt-4 border-t">
-                      <p className="text-sm text-muted-foreground mb-2">Price Range</p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Price Range
+                      </p>
                       <p className="text-lg font-semibold">
-                        {formatCurrency(hotel.priceRange.min, hotel.currency)} - {formatCurrency(hotel.priceRange.max, hotel.currency)}
+                        {formatCurrency(hotel.priceRange.min, hotel.currency)} -{" "}
+                        {formatCurrency(hotel.priceRange.max, hotel.currency)}
                       </p>
                     </div>
                   )}
@@ -307,4 +342,3 @@ export default async function AmadeusHotelDetailPage({
     notFound();
   }
 }
-

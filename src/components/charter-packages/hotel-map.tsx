@@ -8,10 +8,12 @@ import { MapPin } from "lucide-react";
 interface Hotel {
   id: string;
   name: string;
-  address: string;
+  latitude: number | null;
+  longitude: number | null;
+  address?: string | null;
   city: string;
   country: string;
-  googleMapsIframe: string | null;
+  placeId?: string | null;
 }
 
 interface HotelMapProps {
